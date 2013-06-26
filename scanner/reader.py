@@ -8,11 +8,14 @@ from db import Db
 from mutabrainz.autofile import AutoFile
 from models.file import File
 from models.track import Track
+from models.album import Album
+from models.artist import Artist
 
 class Reader(threading.Thread):
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
+        self.stop_thread = False
 
     def run(self):
         session = Db().get_session()
@@ -20,17 +23,10 @@ class Reader(threading.Thread):
         start = time.clock()
 
         while True:
-            i = i + 1
-
-            if i % 100 == 0:
-                print "Got %d files (%d seconds, %d files/second)" % \
-                    (i, time.clock() - start, 100 / (time.clock() - start))
-                start = time.clock()
-
             filename = self.queue.get()
-
-            if not filename:
-                print "Quitting reader"
+            
+            if self.stop_thread:
+                print "WARNING: reader stopped!"
                 break
 
             try:
@@ -40,6 +36,10 @@ class Reader(threading.Thread):
                 print "[%s] Error, skipping" % (filename)
                 session.rollback()
                 raise
+
+    def stop(self):
+        self.stop_thread = True
+        self.queue.put(False)
 
     def handle_file(self, filename, session):
         if not AutoFile.is_supported(filename):
@@ -78,13 +78,38 @@ class Reader(threading.Thread):
         file = AutoFile(fh.path)
 
         for track in file.get_tracks():
+            artist = self.get_artist(track['displayartist'], session)
+            album = self.get_album(artist, track.get('album'), session)
+
             try:
                 dbtrack = self.get_dbtrack(track['stringid'], session)
             except sqlalchemy.orm.exc.NoResultFound:
                 dbtrack = Track()
                 fh.tracks.append(dbtrack)
+                album.tracks.append(dbtrack)
+                artist.tracks.append(dbtrack)
 
             dbtrack.from_dict(track)
+
+    def get_artist(self, name, session):
+        try:
+            return session.query(Artist).filter(Artist.name == name).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            ret = Artist(name = name)
+            session.add(ret)
+
+            return ret
+
+    def get_album(self, artist, title, session):
+        try:
+            return session.query(Album).filter(Album.title == title).\
+                filter(Album.artist_id == artist.id).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            ret = Album(title = title)
+            session.add(ret)
+            artist.albums.append(ret)
+
+            return ret
 
     def get_dbtrack(self, stringid, session):
         return session.query(Track).filter(Track.stringid == stringid).one()

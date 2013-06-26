@@ -1,0 +1,15 @@
+from base import Base
+from artist import Artist
+
+from sqlalchemy import Column, String, Integer, ForeignKey
+from sqlalchemy.orm import relationship
+
+class Album(Base):
+    __tablename__ = 'albums'
+
+    id = Column(Integer, primary_key = True)
+
+    title = Column(String)
+    artist_id = Column(Integer, ForeignKey(Artist.id))
+
+    tracks = relationship('Track', backref = 'album', cascade = 'all, delete-orphan')

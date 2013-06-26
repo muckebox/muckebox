@@ -21,8 +21,8 @@ class Scanner:
         self.reader.start()
 
     def stop(self):
-        self.queue.put(False)
         self.watcher.stop()
+        self.reader.stop()
 
         self.validator.join()
         self.walker.join()

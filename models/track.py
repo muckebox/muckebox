@@ -1,7 +1,11 @@
 from base import Base
 from file import File
+from artist import Artist
+from album import Album
+from transcoding import Transcoding
 
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 
 class Track(Base):
     __tablename__ = 'tracks'
@@ -12,10 +16,12 @@ class Track(Base):
     file_id = Column(Integer, ForeignKey(File.id))
 
     title = Column(String)
-    artist = Column(String, index = True)
 
-    album = Column(String, index = True)
-    albumartist = Column(String, index = True)
+    album_id = Column(Integer, ForeignKey(Album.id))
+    artist_id = Column(Integer, ForeignKey(Artist.id))
+
+    displayartist = Column(String, index = True)
+
     date = Column(String)
 
     tracknumber = Column(Integer)
@@ -25,4 +31,5 @@ class Track(Base):
     catalognumber = Column(String)
 
     length = Column(Integer)
-    displayartist = Column(String, index = True)
+
+    transcodings = relationship('Transcoding', backref = 'track', cascade = 'all, delete, delete-orphan')

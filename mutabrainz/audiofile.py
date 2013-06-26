@@ -39,6 +39,8 @@ class AudioFile:
 
         track['displayartist'] = track.get('albumartist') or \
             track.get('artist')
+        track['title'] = track.get('title') or \
+            os.path.splitext(os.path.basename(string_id))[0]
 
         return track
 

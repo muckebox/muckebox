@@ -28,6 +28,7 @@ class Watcher(threading.Thread):
         threading.Thread.__init__(self)
         self.path = path
         self.queue = queue
+        self.stop_thread = False
 
     def run(self):
         wm = pyinotify.WatchManager()
@@ -45,8 +46,15 @@ class Watcher(threading.Thread):
 
         print "Watching %s" % (self.path)
 
-        self.notifier.loop()
+        while not self.stop_thread:
+            if self.notifier.check_events(500):
+                self.notifier.read_events()
+                self.notifier.process_events()
+
+        self.notifier.stop()
+
+        print "WARNING: Watcher for '%s' stopped!" % (self.path)
 
     def stop(self):
-        self.notifier.stop()
+        self.stop_thread = True
 

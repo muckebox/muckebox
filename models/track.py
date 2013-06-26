@@ -2,7 +2,6 @@ from base import Base
 from file import File
 from artist import Artist
 from album import Album
-from transcoding import Transcoding
 
 from sqlalchemy import Column, Integer, String, ForeignKey
 from sqlalchemy.orm import relationship
@@ -31,5 +30,3 @@ class Track(Base):
     catalognumber = Column(String)
 
     length = Column(Integer)
-
-    transcodings = relationship('Transcoding', backref = 'track', cascade = 'all, delete, delete-orphan')

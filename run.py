@@ -18,7 +18,9 @@ class Muckebox(object):
 
         if self.scanner:
             self.scanner.stop()
-        self.api.stop()
+
+        if self.api:
+            self.api.stop()
 
         sys.exit(0)
 
@@ -44,6 +46,9 @@ class Muckebox(object):
         parser.add_argument('-v', '--verbose', dest = 'verbose',
                             action = 'store_true', default = False,
                             help = 'Verbose output')
+        parser.add_argument('-p', '--port', dest = 'port',
+                            default = 2342, type = int,
+                            help = 'Port for the API (0 to disable)')
         args = parser.parse_args()
 
         return args
@@ -54,7 +59,6 @@ class Muckebox(object):
         dbpath = args.dbpath
 
         self.db = Db(dbpath, args.verbose)
-        self.api = API()
 
         if not args.no_scanner:
             self.scanner = Scanner(path)
@@ -62,7 +66,11 @@ class Muckebox(object):
         else:
             self.scanner = False
 
-        self.api.start()
+        if args.port > 0:
+            self.api = API(args.port)
+            self.api.start()
+        else:
+            self.api = False
 
         self.wait_for_signal()
 

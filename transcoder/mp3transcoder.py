@@ -9,10 +9,8 @@ class MP3Transcoder(ShellTranscoder):
         ShellTranscoder.Quality.HIGHEST:        320
         }
 
-    def __init__(self, path, queue):
-        ShellTranscoder.__init__(self, path, queue)
-
-        self.quality = 256
+    def __init__(self, path, queue, quality):
+        ShellTranscoder.__init__(self, path, queue, quality)
 
     def get_suffix(self):
         return 'mp3'
@@ -21,13 +19,13 @@ class MP3Transcoder(ShellTranscoder):
         return 'audio/mpeg'
 
     def set_quality(self, quality):
-        self.quality = QUALITY_MAP[quality]
+        self.quality = self.QUALITY_MAP[quality]
 
     def get_command(self):
         return [ 'ffmpeg',
                  '-i', self.path,
-                 '-ab', str(self.quality),
+                 '-ab', "%dk" % (self.quality),
                  '-v', 'quiet',
-                 '-f', 'ogg',
+                 '-f', 'mp3',
                  '-' ]
 

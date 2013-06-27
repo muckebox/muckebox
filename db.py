@@ -8,18 +8,18 @@ from models.artist import Artist
 
 from models.base import Base
 
-class Db:
+class Db(object):
     engine = False
     session_maker = False
 
-    def __init__(self, path = False, verbose = False):
-        if path:
-            uri = 'sqlite:///%s/muckebox.db' % (path)
+    @classmethod
+    def open(cls, path, verbose = False):
+        uri = 'sqlite:///%s/muckebox.db' % (path)
                         
-            Db.engine = create_engine(uri, echo = verbose)
-            Db.session_maker = sessionmaker(bind = self.engine)
+        Db.engine = create_engine(uri, echo = verbose)
+        Db.session_maker = sessionmaker(bind = cls.engine)
 
-            Base.metadata.create_all(self.engine)
+        Base.metadata.create_all(cls.engine)
 
     @classmethod
     def get_session(cls):

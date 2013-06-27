@@ -1,4 +1,3 @@
-import argparse
 import time
 import signal
 import sys
@@ -6,6 +5,7 @@ import sys
 from scanner.scanner import Scanner
 from db import Db
 from api.api import API
+from config import Config
 
 class Muckebox(object):
     instance = False
@@ -32,42 +32,22 @@ class Muckebox(object):
 
         signal.pause()
 
-    def parse_args(self):
-        parser = argparse.ArgumentParser(description = 'mukkebox')
-        
-        parser.add_argument('path', metavar = 'path', nargs = 1,
-                            help = 'Path to music library')
-        parser.add_argument('-d', '--dbpath', metavar = 'dbpath',
-                            default = '/tmp',
-                            help = 'Directory where the database is stored')
-        parser.add_argument('-n', '--no-scanner', dest = 'no_scanner',
-                            action = 'store_true', default = False,
-                            help = 'Disable the scanner')
-        parser.add_argument('-v', '--verbose', dest = 'verbose',
-                            action = 'store_true', default = False,
-                            help = 'Verbose output')
-        parser.add_argument('-p', '--port', dest = 'port',
-                            default = 2342, type = int,
-                            help = 'Port for the API (0 to disable)')
-        args = parser.parse_args()
-
-        return args
-
     def main(self):
-        args = self.parse_args()
-        path = args.path[0]
-        dbpath = args.dbpath
+        Config.parse_args()
 
-        self.db = Db(dbpath, args.verbose)
+        path = Config.args.path[0]
+        dbpath = Config.args.dbpath
 
-        if not args.no_scanner:
+        Db.open(dbpath, Config.args.verbose)
+
+        if not Config.args.no_scanner:
             self.scanner = Scanner(path)
             self.scanner.start()
         else:
             self.scanner = False
 
-        if args.port > 0:
-            self.api = API(args.port)
+        if Config.args.port > 0:
+            self.api = API(Config.args.port)
             self.api.start()
         else:
             self.api = False

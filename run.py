@@ -1,6 +1,7 @@
 import time
 import signal
 import sys
+import os
 
 from scanner.scanner import Scanner
 from db import Db
@@ -37,6 +38,9 @@ class Muckebox(object):
 
         path = Config.args.path[0]
         dbpath = Config.args.dbpath
+
+        if not os.path.exists(Config.args.cache_dir):
+            os.makedirs(Config.args.cache_dir)
 
         Db.open(dbpath, Config.args.verbose)
 

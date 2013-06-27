@@ -5,6 +5,7 @@ from models.file import File
 from models.track import Track
 from models.album import Album
 from models.artist import Artist
+from models.transcoding import Transcoding
 
 from models.base import Base
 

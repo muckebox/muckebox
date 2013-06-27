@@ -21,5 +21,8 @@ class Config(object):
         parser.add_argument('-p', '--port', dest = 'port',
                             default = 2342, type = int,
                             help = 'Port for the API (0 to disable)')
+        parser.add_argument('-c', '--cache-dir', dest = 'cache_dir',
+                            default = '/tmp/muckecache',
+                            help = 'Cache directory for transcodings')
 
         cls.args = parser.parse_args()

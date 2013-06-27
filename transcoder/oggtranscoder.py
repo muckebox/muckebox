@@ -25,7 +25,7 @@ class OggTranscoder(ShellTranscoder):
         return [ 'ffmpeg',
                  '-i', self.path,
                  '-aq', str(self.quality),
-                 '-v', '0',
+                 '-v', 'quiet',
                  '-f', 'ogg',
                  '-acodec', 'libvorbis',
                  '-' ]

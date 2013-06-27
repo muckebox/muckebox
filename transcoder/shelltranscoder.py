@@ -9,7 +9,7 @@ class ShellTranscoder(BaseTranscoder):
     def __init__(self, path, queue, quality):
         BaseTranscoder.__init__(self, path, queue, quality)
 
-        self.abort = False
+        self.stop = False
 
     @abstractmethod
     def get_command(self):
@@ -30,7 +30,7 @@ class ShellTranscoder(BaseTranscoder):
                 self.queue.put(block)
 
             if self.process.poll() is not None:
-                if not self.abort:
+                if not self.stop:
                     self.set_completed()
 
                 self.queue.put(False)
@@ -38,7 +38,7 @@ class ShellTranscoder(BaseTranscoder):
                 break
 
     def abort(self):
-        self.abort = True
+        self.stop = True
 
         if self.process:
             self.process.terminate()

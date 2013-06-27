@@ -24,5 +24,10 @@ class MP3Transcoder(ShellTranscoder):
         self.quality = QUALITY_MAP[quality]
 
     def get_command(self):
-        return "ffmpeg -i %s -ab %d -v 0 -f mp3 -" % (self.path, self.quality)
+        return [ 'ffmpeg',
+                 '-i', self.path,
+                 '-ab', str(self.quality),
+                 '-v', 'quiet',
+                 '-f', 'ogg',
+                 '-' ]
 

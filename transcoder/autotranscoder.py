@@ -23,8 +23,6 @@ class AutoTranscoder(BaseTranscoder):
 
         if cached_path:
             self.transcoder = NullTranscoder(cached_path, queue)
-            print "Serving cached null transcoding from '%s' (format %s)" % \
-                (cached_path, self.transcoder.get_mime_type())
         else:
             transcoder_cls = self.get_transcoder(fmt)
 
@@ -34,13 +32,8 @@ class AutoTranscoder(BaseTranscoder):
                 transcoder = transcoder_cls(source_path, queue, quality)
                 self.transcoder = CachingTranscoder(transcoder, source_path,
                                                     output_path)
-
-                print "Serving transcoding from '%s' to '%s' (format %s)" % \
-                    (source_path, output_path, self.transcoder.get_mime_type())
             else:
                 self.transcoder = NullTranscoder(source_path, queue)
-                print "Serving null transcoding from '%s' (format %s)" % \
-                    (source_path, self.transcoder.get_mime_type())
 
         BaseTranscoder.__init__(self, source_path, queue, quality)
 

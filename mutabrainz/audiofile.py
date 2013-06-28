@@ -3,6 +3,8 @@ import os.path
 from abc import ABCMeta, abstractmethod
 from types import ListType
 
+from artwork import Artwork
+
 class AudioFile:
     __metaclass__ = ABCMeta
 
@@ -17,6 +19,17 @@ class AudioFile:
     @abstractmethod
     def get_tracks(self):
         return False
+
+    def get_picture(self):
+        ret = Artwork.get_cover(self.get_path())
+
+        if ret:
+            return ret
+
+        return False
+
+    def get_path(self):
+        return self.path
 
     def get_file(self):
         if not self.file:

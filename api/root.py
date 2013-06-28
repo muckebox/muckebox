@@ -4,6 +4,8 @@ from tracks import TracksAPI
 
 from stream import StreamAPI
 
+from artwork import ArtworkAPI
+
 from ping import PingAPI
 from status import StatusAPI
 
@@ -14,6 +16,8 @@ class Root(object):
         tracks = TracksAPI()
 
         stream = StreamAPI()
+
+        artwork = ArtworkAPI()
 
         ping = PingAPI()
         status = StatusAPI()

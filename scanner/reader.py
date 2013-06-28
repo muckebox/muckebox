@@ -26,7 +26,6 @@ class Reader(threading.Thread):
             filename = self.queue.get()
             
             if self.stop_thread:
-                print "WARNING: reader stopped!"
                 break
 
             try:

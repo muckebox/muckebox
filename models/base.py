@@ -8,8 +8,18 @@ def from_dict(self, values):
             setattr(self, col.name, values[col.name])
 
 def to_dict(self):
-    return { col.name: getattr(self, col.name) \
-                 for col in self.__table__.columns }
+    ret = { }
+    privates = { }
+
+    if hasattr(self, '__private__'):
+        for p in self.__private__:
+            privates[p] = True
+    
+    for col in self.__table__.columns:
+        if not col.name in privates:
+            ret[col.name] = getattr(self, col.name)
+
+    return ret
 
 Base.from_dict = from_dict
 Base.to_dict = to_dict

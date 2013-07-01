@@ -9,8 +9,14 @@ from sqlalchemy.orm import relationship
 class Track(Base):
     __tablename__ = 'tracks'
 
+    __private__ = (
+        'stringid',
+        'directory'
+        )
+
     id = Column(Integer, primary_key = True)
     stringid = Column(String, index = True, unique = True)
+    directory = Column(String, index = True)
 
     file_id = Column(Integer, ForeignKey(File.id))
 

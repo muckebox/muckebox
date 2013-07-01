@@ -41,6 +41,7 @@ class AudioFile:
         track = { }
 
         track['stringid'] = string_id
+        track['directory'] = os.path.dirname(string_id)
         track['length'] = int(self.get_length())
 
         for k in mapping.keys():
@@ -54,6 +55,8 @@ class AudioFile:
             track.get('artist')
         track['title'] = track.get('title') or \
             os.path.splitext(os.path.basename(string_id))[0]
+        track['album'] = track.get('album') or \
+            os.path.basename(track['directory'])
 
         return track
 

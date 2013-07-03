@@ -11,7 +11,9 @@ class API(threading.Thread):
     def run(self):
         cherrypy.config.update({
                 'server.socket_host': '0.0.0.0',
-                'server.socket_port': self.port
+                'server.socket_port': self.port,
+                'tools.gzip.on': True,
+                'tools.gzip.mime_types': ['text/*', 'application/json']
                 })
         cherrypy.engine.autoreload.unsubscribe()
         cherrypy.quickstart(Root())

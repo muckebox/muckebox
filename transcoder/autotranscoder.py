@@ -98,5 +98,5 @@ class AutoTranscoder(BaseTranscoder):
         h = hashlib.sha1(track.stringid + ":" + str(quality)).hexdigest()
         filename = h + "." + format
 
-        return Config.args.cache_dir + "/" + filename
+        return Config.get_cache_path() + "/" + filename
 

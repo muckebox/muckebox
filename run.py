@@ -36,22 +36,23 @@ class Muckebox(object):
     def main(self):
         Config.parse_args()
 
-        path = Config.args.path[0]
-        dbpath = Config.args.dbpath
+        library_path = Config.get_library_path()
+        cache_path = Config.get_cache_path()
+        dbpath = Config.get_db_path()
 
-        if not os.path.exists(Config.args.cache_dir):
-            os.makedirs(Config.args.cache_dir)
+        if not os.path.exists(cache_path):
+            os.makedirs(cache_path)
 
-        Db.open(dbpath, Config.args.verbose)
+        Db.open(dbpath, Config.is_verbose())
 
-        if not Config.args.no_scanner:
-            self.scanner = Scanner(path)
+        if Config.is_scanner_enabled():
+            self.scanner = Scanner(library_path)
             self.scanner.start()
         else:
             self.scanner = False
 
-        if Config.args.port > 0:
-            self.api = API(Config.args.port)
+        if Config.is_api_enabled():
+            self.api = API(Config.get_port())
             self.api.start()
         else:
             self.api = False

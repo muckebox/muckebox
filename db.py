@@ -15,7 +15,7 @@ class Db(object):
 
     @classmethod
     def open(cls, path, verbose = False):
-        uri = 'sqlite:///%s/muckebox.db' % (path)
+        uri = 'sqlite:///%s' % (path)
                         
         Db.engine = create_engine(uri, echo = verbose)
         Db.session_maker = sessionmaker(bind = cls.engine)

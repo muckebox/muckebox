@@ -9,9 +9,9 @@ class Config(object):
         
         parser.add_argument('path', metavar = 'path', nargs = 1,
                             help = 'Path to music library')
-        parser.add_argument('-d', '--dbpath', metavar = 'dbpath',
-                            default = '/tmp',
-                            help = 'Directory where the database is stored')
+        parser.add_argument('-d', '--data-path', dest = 'datapath',
+                            default = '/var/muckebox',
+                            help = 'Directory where to store our data')
         parser.add_argument('-n', '--no-scanner', dest = 'no_scanner',
                             action = 'store_true', default = False,
                             help = 'Disable the scanner')
@@ -22,7 +22,42 @@ class Config(object):
                             default = 2342, type = int,
                             help = 'Port for the API (0 to disable)')
         parser.add_argument('-c', '--cache-dir', dest = 'cache_dir',
-                            default = '/tmp/muckecache',
+                            default = '',
                             help = 'Cache directory for transcodings')
 
         cls.args = parser.parse_args()
+
+    @classmethod
+    def get_data_path(cls):
+        return cls.args.datapath
+
+    @classmethod
+    def get_db_path(cls):
+        return cls.get_data_path() + "/muckebox.db"
+
+    @classmethod
+    def get_library_path(cls):
+        return cls.args.path[0]
+
+    @classmethod
+    def get_cache_path(cls):
+        if len(cls.args.cache_dir) > 0:
+            return cls.args.cache_dir
+
+        return cls.get_data_path() + "/cache"
+
+    @classmethod
+    def is_verbose(cls):
+        return cls.args.verbose
+
+    @classmethod
+    def get_port(cls):
+        return cls.args.port
+
+    @classmethod
+    def is_scanner_enabled(cls):
+        return not cls.args.no_scanner
+
+    @classmethod
+    def is_api_enabled(cls):
+        return cls.args.port > 0

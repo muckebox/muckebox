@@ -13,7 +13,8 @@ class API(threading.Thread):
                 'server.socket_host': '0.0.0.0',
                 'server.socket_port': self.port,
                 'tools.gzip.on': True,
-                'tools.gzip.mime_types': ['text/*', 'application/json']
+                'tools.gzip.mime_types': ['text/*', 'application/json'],
+                'tools.encode.on': True
                 })
         cherrypy.engine.autoreload.unsubscribe()
         cherrypy.quickstart(Root())

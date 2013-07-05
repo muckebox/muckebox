@@ -25,6 +25,7 @@ class API(threading.Thread):
 
         if os.path.exists(keyfile) and os.path.exists(crtfile):
             config.update({
+                    'server.ssl_module': 'pyopenssl',
                     'server.ssl_certificate': crtfile,
                     'server.ssl_private_key': keyfile
                     })

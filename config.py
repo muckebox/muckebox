@@ -36,6 +36,15 @@ class Config(object):
         return cls.get_data_path() + "/muckebox.db"
 
     @classmethod
+    def get_ssl_path(cls, file_name = False):
+        path = cls.get_data_path() + "/ssl"
+
+        if file_name:
+            path += "/" + file_name
+
+        return path
+
+    @classmethod
     def get_library_path(cls):
         return cls.args.path[0]
 

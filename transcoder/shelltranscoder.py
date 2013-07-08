@@ -18,11 +18,18 @@ class ShellTranscoder(BaseTranscoder):
     def set_source_file(self, path):
         self.path = path
 
-    def run(self):
+    def start_process(self):
         self.process = subprocess.Popen(self.get_command(),
                                         stdout = subprocess.PIPE,
                                         bufsize = self.BLOCK_SIZE)
+
+    def stop_process(self):
+        if self.process:
+            self.process.kill()
         
+    def run(self):
+        self.start_process()
+
         while True:
             block = self.process.stdout.read(self.BLOCK_SIZE)
 
@@ -39,8 +46,5 @@ class ShellTranscoder(BaseTranscoder):
 
     def abort(self):
         self.stop = True
-
-        if self.process:
-            self.process.terminate()
-        
+        self.stop_process()
         

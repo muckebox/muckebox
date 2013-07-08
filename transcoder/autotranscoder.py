@@ -4,6 +4,7 @@ import os.path
 from basetranscoder import BaseTranscoder
 from oggtranscoder import OggTranscoder
 from mp3transcoder import MP3Transcoder
+from opustranscoder import OpusTranscoder
 from nulltranscoder import NullTranscoder
 from cachingtranscoder import CachingTranscoder
 
@@ -14,7 +15,8 @@ from config import Config
 class AutoTranscoder(BaseTranscoder):
     TRANSCODER_MAP = {
         'mp3': MP3Transcoder,
-        'ogg': OggTranscoder
+        'ogg': OggTranscoder,
+        'opus': OpusTranscoder
         }
 
     def __init__(self, track, fmt, quality, queue):

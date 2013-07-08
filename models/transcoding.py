@@ -9,7 +9,7 @@ class Transcoding(Base):
 
     source_path = Column(String, index = True)
 
-    format = Column(Enum('ogg', 'mp3'), index = True)
+    format = Column(Enum('ogg', 'mp3', 'opus'), index = True)
     quality = Column(Integer, index = True)
 
     path = Column(String)

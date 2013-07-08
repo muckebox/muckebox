@@ -24,6 +24,9 @@ class Config(object):
         parser.add_argument('-c', '--cache-dir', dest = 'cache_dir',
                             default = '',
                             help = 'Cache directory for transcodings')
+        parser.add_argument('-V', '--va-artist', dest = 'va_artist',
+                            default = 'VA',
+                            help = 'Default name for various artist albums')
 
         cls.args = parser.parse_args()
 
@@ -70,3 +73,7 @@ class Config(object):
     @classmethod
     def is_api_enabled(cls):
         return cls.args.port > 0
+
+    @classmethod
+    def get_va_artist(cls):
+        return cls.args.va_artist

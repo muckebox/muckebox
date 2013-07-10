@@ -7,8 +7,8 @@ class OpusTranscoder(ShellTranscoder):
         ShellTranscoder.Quality.LOWEST:         96,
         ShellTranscoder.Quality.LOW:            112,
         ShellTranscoder.Quality.MEDIUM:         128,
-        ShellTranscoder.Quality.HIGH:           192,
-        ShellTranscoder.Quality.HIGHEST:        256
+        ShellTranscoder.Quality.HIGH:           160,
+        ShellTranscoder.Quality.HIGHEST:        192
         }
 
     def __init__(self, path, queue, quality):

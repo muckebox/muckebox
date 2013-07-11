@@ -2,6 +2,7 @@ from cherrypy import expose, tools
 
 from models.track import Track
 from db import Db
+from sqlalchemy.sql.expression import func
 
 class TracksAPI(object):
     @expose
@@ -12,7 +13,10 @@ class TracksAPI(object):
         if album and album.isdigit():
             q = q.filter(Track.album_id == int(album))
 
-        if track_id and track_id.isdigit():
-            q = q.filter(Track.id == int(track_id))
+        if track_id:
+            if track_id == 'random':
+                q = q.order_by(func.random()).limit(1)
+            elif track_id.isdigit():
+                q = q.filter(Track.id == int(track_id))
 
         return [ a.to_dict() for a in q ]

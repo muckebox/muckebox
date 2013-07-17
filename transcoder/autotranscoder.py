@@ -97,8 +97,9 @@ class AutoTranscoder(BaseTranscoder):
 
     @classmethod
     def get_cached_path(cls, track, format, quality):
-        h = hashlib.sha1(track.stringid + ":" + str(quality)).hexdigest()
-        filename = h + "." + format
+        filekey = "%s:%d" % (track.stringid, quality)
+        h = hashlib.sha1(filekey.encode('utf-8')).hexdigest()
+        filename = "%s.%s" % (h, format)
 
         return Config.get_cache_path() + "/" + filename
 

@@ -1,5 +1,8 @@
 import pyinotify
 import threading
+import os.path
+
+from walker import Walker
 
 class Watcher(object):
     class EventHandler(pyinotify.ProcessEvent):
@@ -22,7 +25,11 @@ class Watcher(object):
                     
         def handle_update(self, event):
             print "Update on %s" % (event.pathname)
-            self.queue.put(event.pathname)
+
+            if os.path.isdir(event.pathname):
+                Walker(event.pathname, self.queue).start()
+            else:
+                self.queue.put(event.pathname)
 
     def __init__(self, path, queue):
         self.path = path

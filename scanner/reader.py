@@ -155,7 +155,7 @@ class Reader(threading.Thread):
         return session.query(Track).filter(Track.stringid == stringid).one()
                 
     def handle_deletion(self, filename, session):
-        for f in session.query(File).filter(File.path == filename):
+        for f in session.query(File).filter(File.path.like(filename + '%')):
             session.delete(f)
 
 

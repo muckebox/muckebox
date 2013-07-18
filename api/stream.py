@@ -50,6 +50,7 @@ class StreamAPI(object):
                 yield block
             except GeneratorExit:
                 transcoder.abort()
+                raise
 
     @staticmethod
     def get_track(trackid, session):

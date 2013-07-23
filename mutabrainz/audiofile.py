@@ -43,6 +43,8 @@ class AudioFile:
         track['stringid'] = string_id
         track['directory'] = os.path.dirname(string_id)
         track['length'] = int(self.get_length())
+        track['bits_per_sample'] = int(self.get_bits_per_sample())
+        track['sample_rate'] = int(self.get_sample_rate())
 
         for k in mapping.keys():
             if mapping[k] in tags:
@@ -65,3 +67,15 @@ class AudioFile:
 
     def get_length(self):
         return self.get_file().info.length
+
+    def get_bits_per_sample(self):
+        info = self.get_file().info
+        
+        if hasattr(info, 'bits_per_sample'):
+            return info.bits_per_sample
+
+        return 16
+
+    def get_sample_rate(self):
+        return self.get_file().info.sample_rate
+

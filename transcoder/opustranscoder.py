@@ -28,6 +28,8 @@ class OpusTranscoder(ShellTranscoder):
             [ 'ffmpeg', '-i', self.path,
               '-v', 'quiet',
               '-f', 'wav',
+              '-ar', str(self.get_output_sample_rate()),
+              '-sample_fmt', 's%d' % (self.get_output_bits_per_sample()),
               '-', ], stdout = subprocess.PIPE,
             bufsize = self.BLOCK_SIZE)
         self.process = subprocess.Popen(

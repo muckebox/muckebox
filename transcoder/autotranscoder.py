@@ -19,25 +19,31 @@ class AutoTranscoder(BaseTranscoder):
         'opus': OpusTranscoder
         }
 
-    def __init__(self, track, fmt, quality, queue):
-        source_path = track.file.path
-        cached_path = self.get_cached_transcoding(source_path, fmt, quality)
+    def __init__(self, track, format, queue):
+        source = {
+            'path': track.file.path,
+            'sample_rate': track.sample_rate,
+            'bits_per_sample': track.bits_per_sample
+            }
+
+        cached_path = self.get_cached_transcoding(source, format)
 
         if cached_path:
-            self.transcoder = NullTranscoder(cached_path, queue)
+            self.transcoder = NullTranscoder({ "path": cached_path }, queue)
         else:
-            transcoder_cls = self.get_transcoder(fmt)
+            transcoder_cls = self.get_transcoder(format)
 
             if transcoder_cls:
-                output_path = self.get_cached_path(track, fmt, quality)
+                output_path = self.get_cached_path(track, format)
 
-                transcoder = transcoder_cls(source_path, queue, quality)
-                self.transcoder = CachingTranscoder(transcoder, source_path,
+                transcoder = transcoder_cls(source, queue, format)
+                self.transcoder = CachingTranscoder(transcoder,
+                                                    source["path"],
                                                     output_path)
             else:
-                self.transcoder = NullTranscoder(source_path, queue)
+                self.transcoder = NullTranscoder(source, queue)
 
-        BaseTranscoder.__init__(self, source_path, queue, quality)
+        BaseTranscoder.__init__(self, source, queue, format)
 
     def set_quality(self, quality):
         self.transcoder.set_quality(quality)
@@ -62,22 +68,24 @@ class AutoTranscoder(BaseTranscoder):
         return self.transcoder.has_completed()
 
     @classmethod
-    def get_transcoder(cls, fmt):
-        if fmt in cls.TRANSCODER_MAP:
-            return cls.TRANSCODER_MAP[fmt]
+    def get_transcoder(cls, format):
+        if "format" in format and format["format"] in cls.TRANSCODER_MAP:
+            return cls.TRANSCODER_MAP[format["format"]]
 
         return False
 
     @classmethod
-    def get_cached_transcoding(cls, path, fmt, quality):
+    def get_cached_transcoding(cls, source, format):
         session = Db.get_session()
         query = session.query(Transcoding). \
-            filter(Transcoding.source_path == path). \
-            filter(Transcoding.format == fmt). \
-            filter(Transcoding.quality == quality)
+            filter(Transcoding.source_path == source["path"]). \
+            filter(Transcoding.format == format["format"]). \
+            filter(Transcoding.quality == format["quality"]). \
+            filter(Transcoding.bits_per_sample <= format["bits_per_sample"]). \
+            filter(Transcoding.sample_rate <= format["sample_rate"])
 
         for transcoding in query:
-            if not cls.validate_cached_path(path, transcoding.path):
+            if not cls.validate_cached_path(source["path"], transcoding.path):
                 session.delete(transcoding)
                 session.commit()
             else:
@@ -96,10 +104,10 @@ class AutoTranscoder(BaseTranscoder):
         return True
 
     @classmethod
-    def get_cached_path(cls, track, format, quality):
-        filekey = "%s:%d" % (track.stringid, quality)
+    def get_cached_path(cls, track, format):
+        filekey = "%s:%d" % (track.stringid, format["quality"])
         h = hashlib.sha1(filekey.encode('utf-8')).hexdigest()
-        filename = "%s.%s" % (h, format)
+        filename = "%s.%s" % (h, format["format"])
 
         return Config.get_cache_path() + "/" + filename
 

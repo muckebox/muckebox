@@ -16,11 +16,17 @@ class StreamAPI(object):
         }
 
     @cherrypy.expose
-    def default(self, trackid, format = False, quality = 'high'):
+    def default(self, trackid, format = False, quality = 'high', max_bits_per_sample = 16, max_sample_rate = 48000):
         if not (trackid and trackid.isdigit()):
             raise cherrypy.HTTPError(400)
 
         if quality not in self.QUALITY_STRINGS:
+            raise cherrypy.HTTPError(400)
+
+        if not str(max_bits_per_sample).isdigit():
+            raise cherrypy.HTTPError(400)
+
+        if not str(max_sample_rate).isdigit():
             raise cherrypy.HTTPError(400)
 
         session = Db.get_session()
@@ -28,8 +34,10 @@ class StreamAPI(object):
 
         queue = Queue.Queue()
         transcoder = AutoTranscoder(track,
-                                    format,
-                                    self.QUALITY_STRINGS[quality],
+                                    { 'format': format,
+                                      'quality': self.QUALITY_STRINGS[quality],
+                                      'bits_per_sample': max_bits_per_sample,
+                                      'sample_rate': max_sample_rate },
                                     queue)
 
         cherrypy.response.headers["Content-Type"] = transcoder.get_mime_type()
@@ -44,11 +52,13 @@ class StreamAPI(object):
             block = queue.get()
 
             if not block:
+                print "Got empty block, stopping streaming"
                 break
 
             try:
                 yield block
             except GeneratorExit:
+                print "Connection interrupted, aborting transcoding"
                 transcoder.abort()
                 raise
 

@@ -24,7 +24,9 @@ class MP3Transcoder(ShellTranscoder):
     def get_command(self):
         return [ 'ffmpeg',
                  '-i', self.path,
-                 '-ab', "%dk" % (self.quality),
+                 '-ab', '%dk' % (self.quality),
+                 '-ar', str(self.get_output_sample_rate()),
+                 '-sample_fmt', 's%d' % (self.get_output_bits_per_sample()),
                  '-v', 'quiet',
                  '-f', 'mp3',
                  '-' ]

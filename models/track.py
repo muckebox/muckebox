@@ -11,7 +11,9 @@ class Track(Base):
 
     __private__ = (
         'stringid',
-        'directory'
+        'directory',
+        'bits_per_sample',
+        'sample_rate'
         )
 
     id = Column(Integer, primary_key = True)
@@ -36,3 +38,5 @@ class Track(Base):
     catalognumber = Column(String)
 
     length = Column(Integer)
+    bits_per_sample = Column(Integer)
+    sample_rate = Column(Integer)

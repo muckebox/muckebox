@@ -50,10 +50,15 @@ class CachingTranscoder(BaseTranscoder):
         if self.transcoder.has_completed():
             session = Db.get_session()
 
-            session.add(Transcoding(source_path = self.source_path,
-                                    format = self.get_suffix(),
-                                    quality = self.quality,
-                                    path = self.output_path))
+            new_transcoding = Transcoding(
+                source_path = self.source_path,
+                format = self.get_suffix(),
+                quality = self.quality,
+                bits_per_sample = self.transcoder.get_output_bits_per_sample(),
+                sample_rate = self.transcoder.get_output_sample_rate(),
+                path = self.output_path)
+
+            session.add(new_transcoding)
 
             session.commit()
         else:

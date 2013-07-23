@@ -28,4 +28,6 @@ class OggTranscoder(ShellTranscoder):
                  '-v', 'quiet',
                  '-f', 'ogg',
                  '-acodec', 'libvorbis',
+                 '-ar', str(self.get_output_sample_rate()),
+                 '-sample_fmt', 's%d' % (self.get_output_bits_per_sample()),
                  '-' ]

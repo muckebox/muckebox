@@ -30,19 +30,29 @@ class ShellTranscoder(BaseTranscoder):
     def run(self):
         self.start_process()
 
+        bytes_total = 0
+
         while True:
+            print "Reading block"
             block = self.process.stdout.read(self.BLOCK_SIZE)
 
-            if block:
-                self.queue.put(block)
+            if not block or len(block) == 0 or \
+                    self.process.poll() is not None:
+                print "Shell transcoding completed"
 
-            if self.process.poll() is not None:
                 if not self.stop:
                     self.set_completed()
 
                 self.queue.put(False)
 
                 break
+
+            if block:
+                bytes_total += len(block)
+
+                print "Got block (total = %d)" % (bytes_total)
+
+                self.queue.put(block)
 
     def abort(self):
         self.stop = True

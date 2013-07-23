@@ -3,12 +3,14 @@ from audiofile import AudioFile
 from mp3file import MP3File
 from oggfile import OggFile
 from flacfile import FLACFile
+from m4afile import M4AFile
 
 class AutoFile(AudioFile):
     extension_map = {
         'mp3': MP3File,
         'ogg': OggFile,
-        'flac': FLACFile
+        'flac': FLACFile,
+        'm4a': M4AFile
     }
 
     def __init__(self, path):

@@ -7,7 +7,7 @@ import cherrypy
 
 from scanner.scanner import Scanner
 from db import Db
-from api.api import API
+from server.server import Server
 from config import Config
 
 class Muckebox(object):
@@ -24,8 +24,8 @@ class Muckebox(object):
         if self.scanner:
             self.scanner.stop()
 
-        if self.api:
-            self.api.stop()
+        if self.server:
+            self.server.stop()
 
         sys.exit(0)
 
@@ -56,10 +56,10 @@ class Muckebox(object):
             self.scanner = False
 
         if Config.is_api_enabled():
-            self.api = API(Config.get_port())
-            self.api.start()
+            self.server = Server()
+            self.server.start()
         else:
-            self.api = False
+            self.server = False
 
         self.wait_for_signal()
 

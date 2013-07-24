@@ -3,23 +3,22 @@ import logging
 import cherrypy
 import os.path
 
-from root import Root
+from api.api import API
 from config import Config
 
-class API(threading.Thread):
-    LOG_TAG = "API"
+class Server(threading.Thread):
+    LOG_TAG = "SERVER"
 
-    def __init__(self, port = 2342):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.port = port
 
     def configure_server(self, config):
         config.update({
                 'server.socket_host': '0.0.0.0',
-                'server.socket_port': self.port,
+                'server.socket_port': Config.get_port()
             })
 
-    def configure_app(self, config):
+    def configure_api(self, config):
         config.update({
                 '/': {
                     'tools.gzip.on': True,
@@ -51,15 +50,15 @@ class API(threading.Thread):
 
     def run(self):
         config = { }
-        app_config = { }
+        api_config = { }
         
         self.configure_server(config)
         self.configure_ssl(config)
-        self.configure_app(app_config)
+        self.configure_api(api_config)
 
         cherrypy.config.update(config)
         cherrypy.engine.autoreload.unsubscribe()
-        cherrypy.tree.mount(Root(), config = app_config)
+        cherrypy.tree.mount(API(), '/api', config = api_config)
         cherrypy.engine.start()
 
     def stop(self):

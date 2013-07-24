@@ -42,10 +42,17 @@ class Muckebox(object):
 
         library_path = Config.get_library_path()
         cache_path = Config.get_cache_path()
+        log_path = Config.get_log_path()
         dbpath = Config.get_db_path()
 
         if not os.path.exists(cache_path):
             os.makedirs(cache_path)
+
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+
+        self.server = Server()
+        self.server.configure()
 
         Db.open(dbpath, Config.is_verbose())
 
@@ -56,7 +63,6 @@ class Muckebox(object):
             self.scanner = False
 
         if Config.is_api_enabled():
-            self.server = Server()
             self.server.start()
         else:
             self.server = False

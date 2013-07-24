@@ -30,12 +30,27 @@ class Config(object):
         parser.add_argument('-r', '--rescan', dest = 'rescan',
                             action = 'store_true', default = False,
                             help = 'Forcefully rescan library')
+        parser.add_argument('-f', '--foreground', dest = 'foreground',
+                            action = 'store_true', default = False,
+                            help = 'Run in foreground')
 
         cls.args = parser.parse_args()
 
     @classmethod
     def get_data_path(cls):
         return cls.args.datapath
+
+    @classmethod
+    def get_log_path(cls):
+        return cls.get_data_path() + "/log"
+
+    @classmethod
+    def get_access_log_path(cls):
+        return cls.get_log_path() + "/access.log"
+
+    @classmethod
+    def get_error_log_path(cls):
+        return cls.get_log_path() + "/error.log"
 
     @classmethod
     def get_db_path(cls):
@@ -84,3 +99,7 @@ class Config(object):
     @classmethod
     def is_rescan_forced(cls):
         return cls.args.rescan
+
+    @classmethod
+    def is_foreground(cls):
+        return cls.args.foreground

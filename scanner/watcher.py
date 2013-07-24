@@ -3,6 +3,7 @@ import threading
 import os.path
 
 from walker import Walker
+from pathupdate import PathUpdate
 
 class Watcher(object):
     class EventHandler(pyinotify.ProcessEvent):
@@ -29,7 +30,7 @@ class Watcher(object):
             if os.path.isdir(event.pathname):
                 Walker(event.pathname, self.queue).start()
             else:
-                self.queue.put(event.pathname)
+                self.queue.put(PathUpdate(event.pathname, False))
 
     def __init__(self, path, queue):
         self.path = path

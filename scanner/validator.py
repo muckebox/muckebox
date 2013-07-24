@@ -2,6 +2,7 @@ import threading
 
 from db import Db
 from models.file import File
+from pathupdate import PathUpdate
 
 class Validator(threading.Thread):
     def __init__(self, queue):
@@ -13,4 +14,4 @@ class Validator(threading.Thread):
         session = Db.get_session()
 
         for f in session.query(File.path):
-            self.queue.put(f.path)
+            self.queue.put(PathUpdate(f.path, False))

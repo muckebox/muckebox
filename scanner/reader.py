@@ -6,6 +6,7 @@ import sqlalchemy.orm.exc
 
 from config import Config
 from db import Db
+from pathupdate import PathUpdate
 from mutabrainz.autofile import AutoFile
 from models.file import File
 from models.track import Track
@@ -24,16 +25,16 @@ class Reader(threading.Thread):
         start = time.clock()
 
         while True:
-            filename = self.queue.get()
+            update = self.queue.get()
             
             if self.stop_thread:
                 break
 
             try:
-                self.handle_file(filename, session)
+                self.handle_file(update, session)
                 session.commit()
             except:
-                print "[%s] Error, skipping" % (filename)
+                print "[%s] Error, skipping" % (update.path)
                 session.rollback()
                 raise
 
@@ -41,16 +42,16 @@ class Reader(threading.Thread):
         self.stop_thread = True
         self.queue.put(False)
 
-    def handle_file(self, filename, session):
-        if not AutoFile.is_supported(filename):
+    def handle_file(self, update, session):
+        if not AutoFile.is_supported(update.path):
             return
 
-        if os.path.exists(filename):
-            if self.file_updated(filename, session):
-                self.handle_update(filename, session)
+        if os.path.exists(update.path):
+            if self.file_updated(update.path, session) or update.force_update:
+                self.handle_update(update.path, session)
 
         else:
-            self.handle_deletion(filename, session)
+            self.handle_deletion(update.path, session)
 
     def file_updated(self, filename, session):
         for res in session.query(File).filter(File.path == filename):
@@ -65,6 +66,8 @@ class Reader(threading.Thread):
             fh = session.query(File).filter(File.path == filename).one()
         except sqlalchemy.orm.exc.NoResultFound:
             fh = self.handle_new(filename, session)
+            
+        fh.mtime = os.path.getmtime(filename)
 
         self.check_tracks(fh, session)
         

@@ -27,6 +27,9 @@ class Config(object):
         parser.add_argument('-V', '--va-artist', dest = 'va_artist',
                             default = 'VA',
                             help = 'Default name for various artist albums')
+        parser.add_argument('-r', '--rescan', dest = 'rescan',
+                            action = 'store_true', default = False,
+                            help = 'Forcefully rescan library')
 
         cls.args = parser.parse_args()
 
@@ -77,3 +80,7 @@ class Config(object):
     @classmethod
     def get_va_artist(cls):
         return cls.args.va_artist
+    
+    @classmethod
+    def is_rescan_forced(cls):
+        return cls.args.rescan

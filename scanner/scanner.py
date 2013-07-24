@@ -4,13 +4,14 @@ from watcher import Watcher
 from walker import Walker
 from reader import Reader
 from validator import Validator
+from config import Config
 
 class Scanner:
     def __init__(self, path):
         self.path = path
         self.queue = Queue.Queue()
         self.watcher = Watcher(path, self.queue)
-        self.walker = Walker(path, self.queue)
+        self.walker = Walker(path, self.queue, Config.is_rescan_forced())
         self.reader = Reader(self.queue)
         self.validator = Validator(self.queue)
 

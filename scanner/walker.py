@@ -2,6 +2,8 @@ import threading
 import time
 import os
 
+import cherrypy
+
 from pathupdate import PathUpdate
 
 class Walker(threading.Thread):
@@ -10,6 +12,9 @@ class Walker(threading.Thread):
         self.path = path
         self.queue = queue
         self.force_update = force_update
+
+    def log(self, msg):
+        cherrypy.log(msg, "WALKER")
 
     def run(self):
         start = time.clock()
@@ -21,4 +26,4 @@ class Walker(threading.Thread):
              
         end = time.clock()
 
-        print "Traversed %s in %s seconds" % (self.path, end - start)
+        self.log("Traversed %s in %s seconds" % (self.path, end - start))

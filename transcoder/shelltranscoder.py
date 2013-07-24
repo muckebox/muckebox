@@ -21,6 +21,7 @@ class ShellTranscoder(BaseTranscoder):
     def start_process(self):
         self.process = subprocess.Popen(self.get_command(),
                                         stdout = subprocess.PIPE,
+                                        stderr = subprocess.PIPE,
                                         bufsize = self.BLOCK_SIZE)
 
     def stop_process(self):
@@ -33,12 +34,10 @@ class ShellTranscoder(BaseTranscoder):
         bytes_total = 0
 
         while True:
-            print "Reading block"
             block = self.process.stdout.read(self.BLOCK_SIZE)
 
             if not block or len(block) == 0 or \
                     self.process.poll() is not None:
-                print "Shell transcoding completed"
 
                 if not self.stop:
                     self.set_completed()
@@ -49,8 +48,6 @@ class ShellTranscoder(BaseTranscoder):
 
             if block:
                 bytes_total += len(block)
-
-                print "Got block (total = %d)" % (bytes_total)
 
                 self.queue.put(block)
 

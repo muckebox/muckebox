@@ -1,8 +1,10 @@
 import threading
 import os.path
 import time
+import logging
 
 import sqlalchemy.orm.exc
+import cherrypy
 
 from config import Config
 from db import Db
@@ -14,6 +16,8 @@ from models.album import Album
 from models.artist import Artist
 
 class Reader(threading.Thread):
+    LOG_TAG = 'READER'
+
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
@@ -34,7 +38,7 @@ class Reader(threading.Thread):
                 self.handle_file(update, session)
                 session.commit()
             except:
-                print "[%s] Error, skipping" % (update.path)
+                cherrypy.log.error("Cannot read '%s', skipping" % (update.path), LOG_TAG)
                 session.rollback()
                 raise
 
@@ -60,7 +64,7 @@ class Reader(threading.Thread):
         return True
 
     def handle_update(self, filename, session):
-        print "Updating [%s]" % (filename)
+        cherrpy.log("Updating '%s'" % (filename), LOG_TAG)
 
         try:
             fh = session.query(File).filter(File.path == filename).one()

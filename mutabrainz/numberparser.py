@@ -1,4 +1,7 @@
 import re
+import logging
+
+from cherrypy import log
 
 class NumberParser(object):
     SLASH_RE = re.compile('^(?P<number>[0-9]+)/(?P<total>[0-9]+)$')
@@ -36,7 +39,7 @@ class NumberParser(object):
         if match:
             return int(match.group('number'))
 
-        print "WARNING: could not parse disc number '%s'" % (number)
+        log("Could not parse disc number '%s'" % (number), logging.WARNING)
 
         return default
 
@@ -49,7 +52,7 @@ class NumberParser(object):
             return (number, 1)
 
         if not isinstance(number, basestring):
-            print "WARNING: unknown number type '%s'" % (number)
+            log("Unknown number type '%s'" % (number), logging.WARNING)
             return (1, 1)
 
         if number.isdigit():
@@ -71,7 +74,7 @@ class NumberParser(object):
         if match:
             return (int(match.group('number')), 1)
 
-        print "WARNING: could not parse track number '%s'" % (number)
+        log("Could not parse track number '%s'" % (number), logging.WARNING)
 
         return (1, 1)
 

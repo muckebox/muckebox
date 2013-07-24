@@ -52,13 +52,11 @@ class StreamAPI(object):
             block = queue.get()
 
             if not block:
-                print "Got empty block, stopping streaming"
                 break
 
             try:
                 yield block
             except GeneratorExit:
-                print "Connection interrupted, aborting transcoding"
                 transcoder.abort()
                 raise
 

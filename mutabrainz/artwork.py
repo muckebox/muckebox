@@ -2,7 +2,11 @@ import glob
 import mimetypes
 import os.path
 
+from cherrypy import log
+
 class Artwork(object):
+    LOG_TAG = "ARTWORK"
+
     FILE_NAME_LIST = (
         'folder',
         'albumart',
@@ -23,7 +27,7 @@ class Artwork(object):
             with open(file_name, 'rb') as f:
                 file_data = f.read()
 
-            print "Returned folder file '%s'" % (file_name)
+            log("Returned folder file '%s'" % (file_name), cls.LOG_TAG)
             return (mimetypes.guess_type(file_name)[0], file_data)
 
         return False

@@ -3,17 +3,21 @@ import signal
 import sys
 import os
 
+import cherrypy
+
 from scanner.scanner import Scanner
 from db import Db
 from api.api import API
 from config import Config
 
 class Muckebox(object):
+    LOG_TAG = "Muckebox"
+
     instance = False
 
     @staticmethod
     def handle_signal_sigint(signal, frame):
-        print "Caught SIGINT, trying to exit"
+        cherrypy.log("Caught SIGINT, trying to exit", Muckebox.LOG_TAG)
 
         self = Muckebox.instance
 

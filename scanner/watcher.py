@@ -2,11 +2,17 @@ import pyinotify
 import threading
 import os.path
 
+import cherrypy
+
 from walker import Walker
 from pathupdate import PathUpdate
 
 class Watcher(object):
+    LOG_TAG = "WATCHER"
+
     class EventHandler(pyinotify.ProcessEvent):
+        LOG_TAG = "WATCHEVENTHANDLER"
+
         def __init__(self, queue):
             pyinotify.ProcessEvent.__init__(self)
             
@@ -25,7 +31,7 @@ class Watcher(object):
             self.handle_update(event)
                     
         def handle_update(self, event):
-            print "Update on %s" % (event.pathname)
+            cherrypy.log("Update on '%s'" % (event.pathname), self.LOG_TAG)
 
             if os.path.isdir(event.pathname):
                 Walker(event.pathname, self.queue).start()
@@ -52,7 +58,7 @@ class Watcher(object):
 
         wm.add_watch(self.path, mask, rec = True)
 
-        print "Watching %s" % (self.path)
+        cherrypy.log("Watching '%s'" % (self.path), self.LOG_TAG)
 
     def stop(self):
         self.notifier.stop()

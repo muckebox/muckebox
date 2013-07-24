@@ -37,20 +37,20 @@ class ShellTranscoder(BaseTranscoder):
 
         while True:
             block = self.process.stdout.read(self.BLOCK_SIZE)
-            retcode = self.process.poll()
-
-            if not block or len(block) == 0 or retcode != None:
-                if not self.stop:
-                    self.set_completed()
-
-                self.queue.put(False)
-
-                break
 
             if block:
                 bytes_total += len(block)
 
                 self.queue.put(block)
+            else:
+                self.process.wait()
+
+                if not self.stop:
+                    self.set_completed()
+
+                self.queue.put(False)
+                
+                break
 
     def abort(self):
         self.stop = True

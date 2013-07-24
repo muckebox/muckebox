@@ -4,6 +4,7 @@ from abc import ABCMeta, abstractmethod
 from types import ListType
 
 from artwork import Artwork
+from numberparser import NumberParser
 
 class AudioFile:
     __metaclass__ = ABCMeta
@@ -59,6 +60,9 @@ class AudioFile:
             os.path.splitext(os.path.basename(string_id))[0]
         track['album'] = track.get('album') or \
             os.path.basename(track['directory'])
+        (track['tracknumber'], track['discnumber']) = \
+            NumberParser.parse(track.get('tracknumber', 1), \
+                                   track.get('discnumber', 1))
 
         return track
 

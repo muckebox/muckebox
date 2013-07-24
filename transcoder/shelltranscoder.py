@@ -1,10 +1,12 @@
 import subprocess
+import os
 
 from basetranscoder import BaseTranscoder
 from abc import abstractmethod
 
 class ShellTranscoder(BaseTranscoder):
     BLOCK_SIZE = 32 * 1024
+    FNULL = open(os.devnull, 'w')
 
     def __init__(self, path, queue, quality):
         BaseTranscoder.__init__(self, path, queue, quality)
@@ -21,7 +23,7 @@ class ShellTranscoder(BaseTranscoder):
     def start_process(self):
         self.process = subprocess.Popen(self.get_command(),
                                         stdout = subprocess.PIPE,
-                                        stderr = subprocess.DEVNULL,
+                                        stderr = self.FNULL,
                                         bufsize = self.BLOCK_SIZE)
 
     def stop_process(self):
@@ -35,7 +37,7 @@ class ShellTranscoder(BaseTranscoder):
 
         while True:
             block = self.process.stdout.read(self.BLOCK_SIZE)
-            retcode = self.subprocess.poll()
+            retcode = self.process.poll()
 
             if not block or len(block) == 0 or retcode != None:
                 if not self.stop:

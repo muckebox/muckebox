@@ -11,8 +11,8 @@ class OpusTranscoder(ShellTranscoder):
         ShellTranscoder.Quality.HIGHEST:        192
         }
 
-    def __init__(self, path, queue, quality):
-        ShellTranscoder.__init__(self, path, queue, quality)
+    def __init__(self, input, queue, output):
+        ShellTranscoder.__init__(self, input, queue, output)
 
     def get_suffix(self):
         return 'opus'
@@ -30,7 +30,9 @@ class OpusTranscoder(ShellTranscoder):
               '-f', 'wav',
               '-ar', str(self.get_output_sample_rate()),
               '-sample_fmt', 's%d' % (self.get_output_bits_per_sample()),
-              '-', ], stdout = subprocess.PIPE,
+              '-', ],
+            stdout = subprocess.PIPE,
+            stderr = self.FNULL,
             bufsize = self.BLOCK_SIZE)
         self.process = subprocess.Popen(
             [ 'opusenc',
@@ -41,6 +43,7 @@ class OpusTranscoder(ShellTranscoder):
               '-' ],
             stdin = self.decode_process.stdout,
             stdout = subprocess.PIPE,
+            stderr = self.FNULL,
             bufsize = self.BLOCK_SIZE)
 
     def stop_process(self):

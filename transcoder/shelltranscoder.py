@@ -1,17 +1,24 @@
 import subprocess
 import os
+import sys
 
-from basetranscoder import BaseTranscoder
+import cherrypy
+
 from abc import abstractmethod
+from basetranscoder import BaseTranscoder
+from utils.threadmanager import ThreadManager
 
 class ShellTranscoder(BaseTranscoder):
+    LOG_TAG = "SHELLTRANSCODER"
     BLOCK_SIZE = 32 * 1024
     FNULL = open(os.devnull, 'w')
 
-    def __init__(self, path, queue, quality):
-        BaseTranscoder.__init__(self, path, queue, quality)
+    def __init__(self, input, queue, output):
+        BaseTranscoder.__init__(self, input, queue, output)
 
         self.stop = False
+
+        self.name = self.LOG_TAG
 
     @abstractmethod
     def get_command(self):
@@ -36,21 +43,36 @@ class ShellTranscoder(BaseTranscoder):
         bytes_total = 0
 
         while True:
-            block = self.process.stdout.read(self.BLOCK_SIZE)
+            try:
+                ThreadManager.status("READ (%d)" % (bytes_total))
 
-            if block:
-                bytes_total += len(block)
-
-                self.queue.put(block)
-            else:
-                self.process.wait()
-
-                if not self.stop:
-                    self.set_completed()
-
-                self.queue.put(False)
+                block = self.process.stdout.read(self.BLOCK_SIZE)
                 
-                break
+                if block:
+                    bytes_total += len(block)
+
+                    ThreadManager.status("PUT (%d)" % (bytes_total))
+        
+                    self.queue.put(block)
+                else:
+                    ThreadManager.status("WAIT")
+                    self.process.wait()
+
+                    if not self.stop:
+                        self.set_completed()
+
+                    self.queue.put(None)
+                        
+                    break
+            except:
+                cherrypy.log.error("Shell transcoding failed!",
+                                   self.LOG_TAG)
+                cherrypy.log.error(sys.exc_info()[0], self.LOG_TAG)
+                self.queue.put(None)
+
+                raise
+
+            ThreadManager.status("DONE")
 
     def abort(self):
         self.stop = True

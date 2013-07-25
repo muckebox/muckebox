@@ -4,7 +4,8 @@ from watcher import Watcher
 from walker import Walker
 from reader import Reader
 from validator import Validator
-from config import Config
+
+from utils.config import Config
 
 class Scanner:
     def __init__(self, path):

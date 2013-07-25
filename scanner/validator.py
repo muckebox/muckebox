@@ -1,14 +1,19 @@
 import threading
 
-from db import Db
-from models.file import File
 from pathupdate import PathUpdate
 
+from utils.db import Db
+from models.file import File
+
 class Validator(threading.Thread):
+    LOG_TAG = "VALIDATOR"
+
     def __init__(self, queue):
         threading.Thread.__init__(self)
         
         self.queue = queue
+
+        self.name = self.LOG_TAG
 
     def run(self):
         session = Db.get_session()

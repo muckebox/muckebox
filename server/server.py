@@ -4,7 +4,7 @@ import cherrypy
 import os.path
 
 from api.api import API
-from config import Config
+from utils.config import Config
 
 class Server(threading.Thread):
     LOG_TAG = "SERVER"

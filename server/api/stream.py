@@ -1,12 +1,17 @@
 import cherrypy
 import Queue
+import logging
 
 from models.track import Track
-from db import Db
 from transcoder.autotranscoder import AutoTranscoder
+from utils.threadmanager import ThreadManager
+from utils.db import Db
+
+LOG_TAG = 'STREAMAPI'
 
 class StreamAPI(object):
     BLOCK_SIZE = 32 * 1024
+
     QUALITY_STRINGS = {
         'lowest':       AutoTranscoder.Quality.LOWEST,
         'low':          AutoTranscoder.Quality.LOW,
@@ -16,7 +21,8 @@ class StreamAPI(object):
         }
 
     @cherrypy.expose
-    def default(self, trackid, format = False, quality = 'high', max_bits_per_sample = 16, max_sample_rate = 48000):
+    def default(self, trackid, format = False, quality = 'high',
+                max_bits_per_sample = 16, max_sample_rate = 48000):
         if not (trackid and trackid.isdigit()):
             raise cherrypy.HTTPError(400)
 
@@ -29,16 +35,29 @@ class StreamAPI(object):
         if not str(max_sample_rate).isdigit():
             raise cherrypy.HTTPError(400)
 
+        ThreadManager.name(LOG_TAG)
+        ThreadManager.status("Stream setup")
+
         session = Db.get_session()
         track = self.get_track(int(trackid), session)
 
         queue = Queue.Queue()
-        transcoder = AutoTranscoder(track,
-                                    { 'format': format,
-                                      'quality': self.QUALITY_STRINGS[quality],
-                                      'bits_per_sample': max_bits_per_sample,
-                                      'sample_rate': max_sample_rate },
-                                    queue)
+
+        input_config = AutoTranscoder.InputConfiguration(
+            id = track.stringid,
+            path = track.file.path,
+            bits_per_sample = track.bits_per_sample,
+            sample_rate = track.sample_rate
+            )
+
+        output_config = AutoTranscoder.OutputConfiguration(
+            path = False,
+            format = format,
+            quality = self.QUALITY_STRINGS[quality],
+            max_bits_per_sample = max_bits_per_sample,
+            max_sample_rate = max_sample_rate)
+
+        transcoder = AutoTranscoder(input_config, queue, output_config)
 
         cherrypy.response.headers["Content-Type"] = transcoder.get_mime_type()
 
@@ -49,16 +68,23 @@ class StreamAPI(object):
     @staticmethod
     def stream(transcoder, queue):
         while True:
+            ThreadManager.status("queue.get()")
             block = queue.get()
 
-            if not block:
+            if block is None:
+                transcoder.join()
                 break
 
             try:
+                ThreadManager.status("yield")
                 yield block
             except GeneratorExit:
+                cherrypy.log('Connection interrupted, stopping transcoding',
+                             LOG_TAG, logging.WARNING)
                 transcoder.abort()
                 raise
+
+        ThreadManager.status("done")
 
     @staticmethod
     def get_track(trackid, session):

@@ -5,8 +5,8 @@ from basetranscoder import BaseTranscoder
 class NullTranscoder(BaseTranscoder):
     BLOCK_SIZE = 32 * 1024
 
-    def __init__(self, path, queue):
-        BaseTranscoder.__init__(self, path, queue)
+    def __init__(self, input, queue):
+        BaseTranscoder.__init__(self, input, queue)
 
         self.stop = False
 

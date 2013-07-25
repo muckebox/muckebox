@@ -6,9 +6,9 @@ import os
 import cherrypy
 
 from scanner.scanner import Scanner
-from db import Db
 from server.server import Server
-from config import Config
+from utils.config import Config
+from utils.db import Db
 
 class Muckebox(object):
     LOG_TAG = "Muckebox"

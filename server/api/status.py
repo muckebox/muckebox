@@ -2,10 +2,11 @@ import cherrypy
 
 from sqlalchemy import func
 
-from db import Db
 from models.track import Track
 from models.artist import Artist
 from models.album import Album
+from utils.db import Db
+from utils.threadmanager import ThreadManager
 
 class StatusAPI(object):
     @cherrypy.expose
@@ -20,8 +21,11 @@ class StatusAPI(object):
         total_length = session.query(func.sum(Track.length)).one()[0]
 
         return {
-            'artist_count': artist_count,
-            'track_count': track_count,
-            'album_count': album_count,
-            'total_length': total_length
+            'library': {
+                'artist_count': artist_count,
+                'track_count': track_count,
+                'album_count': album_count,
+                'total_length': total_length,
+                },
+            'threads': [ s._asdict() for s in ThreadManager.get_all() ]
             }

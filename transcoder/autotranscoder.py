@@ -1,5 +1,8 @@
 import hashlib
 import os.path
+import logging
+
+import cherrypy
 
 from basetranscoder import BaseTranscoder
 from oggtranscoder import OggTranscoder
@@ -8,42 +11,47 @@ from opustranscoder import OpusTranscoder
 from nulltranscoder import NullTranscoder
 from cachingtranscoder import CachingTranscoder
 
-from db import Db
 from models.transcoding import Transcoding
-from config import Config
+from utils.db import Db
+from utils.config import Config
 
 class AutoTranscoder(BaseTranscoder):
+    LOG_TAG = "AUTOTRANSCODER"
+
     TRANSCODER_MAP = {
         'mp3': MP3Transcoder,
         'ogg': OggTranscoder,
         'opus': OpusTranscoder
         }
 
-    def __init__(self, track, format, queue):
-        source = {
-            'path': track.file.path,
-            'sample_rate': track.sample_rate,
-            'bits_per_sample': track.bits_per_sample
-            }
-
-        cached_path = self.get_cached_transcoding(source, format)
+    def __init__(self, input, queue, output):
+        cached_path = self.get_cached_transcoding(input, output)
 
         if cached_path:
-            self.transcoder = NullTranscoder({ "path": cached_path }, queue)
+            self.transcoder = NullTranscoder(
+                input._replace(path = cached_path), queue)
         else:
-            transcoder_cls = self.get_transcoder(format)
+            transcoder_cls = self.get_transcoder(output.format)
 
             if transcoder_cls:
-                output_path = self.get_cached_path(track, format)
+                cached_output = output._replace(
+                    path = self.get_cached_path(input, output))
 
-                transcoder = transcoder_cls(source, queue, format)
+                transcoder = transcoder_cls(input, queue, cached_output)
                 self.transcoder = CachingTranscoder(transcoder,
-                                                    source["path"],
-                                                    output_path)
-            else:
-                self.transcoder = NullTranscoder(source, queue)
+                                                    input.path,
+                                                    cached_output.path)
 
-        BaseTranscoder.__init__(self, source, queue, format)
+                cherrypy.log("Transcoding to %s, output cached at %s" % \
+                                 (cached_output.format, cached_output.path),
+                             self.LOG_TAG)
+            else:
+                cherrypy.log("Could not find matching transcoder for '%s'" % \
+                                 (output.format),
+                             self.LOG_TAG, logging.WARNING)
+                self.transcoder = NullTranscoder(input, queue)
+
+        BaseTranscoder.__init__(self, input, queue, output)
 
     def set_quality(self, quality):
         self.transcoder.set_quality(quality)
@@ -59,7 +67,9 @@ class AutoTranscoder(BaseTranscoder):
 
     def run(self):
         self.transcoder.start()
-        self.transcoder.wait()
+        self.transcoder.join()
+
+        cherrypy.log("Done", self.LOG_TAG)
 
     def abort(self):
         self.transcoder.abort()
@@ -69,23 +79,23 @@ class AutoTranscoder(BaseTranscoder):
 
     @classmethod
     def get_transcoder(cls, format):
-        if "format" in format and format["format"] in cls.TRANSCODER_MAP:
-            return cls.TRANSCODER_MAP[format["format"]]
+        if format in cls.TRANSCODER_MAP:
+            return cls.TRANSCODER_MAP[format]
 
         return False
 
     @classmethod
-    def get_cached_transcoding(cls, source, format):
+    def get_cached_transcoding(cls, input, output):
         session = Db.get_session()
         query = session.query(Transcoding). \
-            filter(Transcoding.source_path == source["path"]). \
-            filter(Transcoding.format == format["format"]). \
-            filter(Transcoding.quality == format["quality"]). \
-            filter(Transcoding.bits_per_sample <= format["bits_per_sample"]). \
-            filter(Transcoding.sample_rate <= format["sample_rate"])
+            filter(Transcoding.source_path == input.path). \
+            filter(Transcoding.format == output.format). \
+            filter(Transcoding.quality == output.quality). \
+            filter(Transcoding.bits_per_sample <= output.max_bits_per_sample). \
+            filter(Transcoding.sample_rate <= output.max_sample_rate)
 
         for transcoding in query:
-            if not cls.validate_cached_path(source["path"], transcoding.path):
+            if not cls.validate_cached_path(input.path, transcoding.path):
                 session.delete(transcoding)
                 session.commit()
             else:
@@ -104,10 +114,10 @@ class AutoTranscoder(BaseTranscoder):
         return True
 
     @classmethod
-    def get_cached_path(cls, track, format):
-        filekey = "%s:%d" % (track.stringid, format["quality"])
+    def get_cached_path(cls, input, output):
+        filekey = "%s:%d" % (input.id, output.quality)
         h = hashlib.sha1(filekey.encode('utf-8')).hexdigest()
-        filename = "%s.%s" % (h, format["format"])
+        filename = "%s.%s" % (h, output.format)
 
         return Config.get_cache_path() + "/" + filename
 

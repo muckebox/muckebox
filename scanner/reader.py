@@ -6,9 +6,10 @@ import logging
 import sqlalchemy.orm.exc
 import cherrypy
 
-from config import Config
-from db import Db
 from pathupdate import PathUpdate
+
+from utils.config import Config
+from utils.db import Db
 from mutabrainz.autofile import AutoFile
 from models.file import File
 from models.track import Track
@@ -22,6 +23,8 @@ class Reader(threading.Thread):
         threading.Thread.__init__(self)
         self.queue = queue
         self.stop_thread = False
+
+        self.name = self.LOG_TAG
 
     def run(self):
         session = Db().get_session()

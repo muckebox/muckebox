@@ -1,8 +1,26 @@
 import threading
+import collections
 
 from abc import abstractmethod
 
 class BaseTranscoder(threading.Thread):
+    LOG_TAG = "BASETRANSCODER"
+
+    OutputConfiguration = collections.namedtuple('OutputConfiguration', [
+            'path',
+            'format',
+            'quality',
+            'max_bits_per_sample',
+            'max_sample_rate'
+            ])
+
+    InputConfiguration = collections.namedtuple('InputConfiguration', [
+            'id',
+            'path',
+            'bits_per_sample',
+            'sample_rate'
+            ])
+
     class Quality:
         LOWEST  = 1
         LOW     = 2
@@ -10,22 +28,23 @@ class BaseTranscoder(threading.Thread):
         HIGH    = 4
         HIGHEST = 5
         
-    def __init__(self, input = False, queue = False, format = { }):
+    def __init__(self, input = False, queue = False, output = False):
         threading.Thread.__init__(self)
 
         if input:
-            self.set_source_file(input["path"])
-            self.set_input_bits_per_sample(input.get("bits_per_sample"))
-            self.set_input_sample_rate(input.get("sample_rate"))
+            self.set_source_file(input.path)
+            self.set_input_bits_per_sample(input.bits_per_sample)
+            self.set_input_sample_rate(input.sample_rate)
 
-        self.set_quality(format.get("quality", self.Quality.HIGHEST))
-
-        self.set_max_bits_per_sample(format.get("bits_per_sample", 0))
-        self.set_max_sample_rate(format.get("sample_rate", 0))
+        if output:
+            self.set_quality(output.quality)
+            self.set_max_bits_per_sample(output.max_bits_per_sample)
+            self.set_max_sample_rate(output.max_sample_rate)
 
         self.set_output_queue(queue)
-
         self.completed = False
+
+        self.name = self.LOG_TAG
 
     def set_output_queue(self, queue):
         self.queue = queue

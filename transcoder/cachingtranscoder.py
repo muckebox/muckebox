@@ -3,12 +3,15 @@ import Queue
 
 from basetranscoder import BaseTranscoder
 
-from db import Db
 from models.transcoding import Transcoding
+from utils.db import Db
+from utils.threadmanager import ThreadManager
 
 # Wraps another transcoder and adds writing output to a cache
 
 class CachingTranscoder(BaseTranscoder):
+    LOG_TAG = "CACHINGTRANSCODER"
+
     def __init__(self, wrapped_transcoder, source_path, output_path):
         self.transcoder = wrapped_transcoder
         self.source_path = source_path
@@ -18,6 +21,8 @@ class CachingTranscoder(BaseTranscoder):
         BaseTranscoder.__init__(self, False, self.transcoder.queue)
 
         self.transcoder.set_output_queue(self.slave_queue)
+
+        self.name = self.LOG_TAG
 
     def set_quality(self, quality):
         self.quality = quality
@@ -37,15 +42,23 @@ class CachingTranscoder(BaseTranscoder):
         self.transcoder.start()
 
         with open(self.output_path, 'wb') as f:
-            while not self.transcoder.has_finished():
+            while True:
+                ThreadManager.status("slave_queue.get()")
+
                 block = self.slave_queue.get()
+
+                ThreadManager.status("queue.put()")
 
                 self.queue.put(block)
 
-                if block:
-                    f.write(block)
-                else:
-                    break
+                if block is None:
+                    return
+
+                f.write(block)
+
+        ThreadManager.status("complete")
+
+        self.transcoder.join()
 
         if self.transcoder.has_completed():
             session = Db.get_session()

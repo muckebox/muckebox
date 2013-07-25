@@ -41,9 +41,9 @@ class Reader(threading.Thread):
                 self.handle_file(update, session)
                 session.commit()
             except:
-                cherrypy.log.error("Cannot read '%s', skipping" % (update.path), LOG_TAG)
+                cherrypy.log.error("Cannot read '%s', skipping" % (update.path),
+                                   LOG_TAG)
                 session.rollback()
-                raise
 
     def stop(self):
         self.stop_thread = True

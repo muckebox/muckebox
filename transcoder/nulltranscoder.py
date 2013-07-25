@@ -30,7 +30,7 @@ class NullTranscoder(BaseTranscoder):
                 if block:
                     self.queue.put(block)
                 else:
-                    self.queue.put(False)
+                    self.queue.put(None)
                     self.set_completed()
                     break
 

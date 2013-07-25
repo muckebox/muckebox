@@ -11,8 +11,8 @@ from opustranscoder import OpusTranscoder
 from nulltranscoder import NullTranscoder
 from cachingtranscoder import CachingTranscoder
 
-from models.transcoding import Transcoding
-from utils.db import Db
+from db.models.transcoding import Transcoding
+from db.db import Db
 from utils.config import Config
 
 class AutoTranscoder(BaseTranscoder):

@@ -9,12 +9,12 @@ import cherrypy
 from pathupdate import PathUpdate
 
 from utils.config import Config
-from utils.db import Db
 from mutabrainz.autofile import AutoFile
-from models.file import File
-from models.track import Track
-from models.album import Album
-from models.artist import Artist
+from db.models.file import File
+from db.models.track import Track
+from db.models.album import Album
+from db.models.artist import Artist
+from db.db import Db
 
 class Reader(threading.Thread):
     LOG_TAG = 'READER'

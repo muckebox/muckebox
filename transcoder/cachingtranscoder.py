@@ -3,8 +3,8 @@ import Queue
 
 from basetranscoder import BaseTranscoder
 
-from models.transcoding import Transcoding
-from utils.db import Db
+from db.models.transcoding import Transcoding
+from db.db import Db
 from utils.threadmanager import ThreadManager
 
 # Wraps another transcoder and adds writing output to a cache
@@ -52,7 +52,7 @@ class CachingTranscoder(BaseTranscoder):
                 self.queue.put(block)
 
                 if block is None:
-                    return
+                    break
 
                 f.write(block)
 

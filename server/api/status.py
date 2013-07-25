@@ -2,10 +2,10 @@ import cherrypy
 
 from sqlalchemy import func
 
-from models.track import Track
-from models.artist import Artist
-from models.album import Album
-from utils.db import Db
+from db.models.track import Track
+from db.models.artist import Artist
+from db.models.album import Album
+from db.db import Db
 from utils.threadmanager import ThreadManager
 
 class StatusAPI(object):

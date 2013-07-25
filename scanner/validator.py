@@ -2,8 +2,8 @@ import threading
 
 from pathupdate import PathUpdate
 
-from utils.db import Db
-from models.file import File
+from db.db import Db
+from db.models.file import File
 
 class Validator(threading.Thread):
     LOG_TAG = "VALIDATOR"

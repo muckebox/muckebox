@@ -10,7 +10,7 @@ from utils.config import Config
 class Scanner:
     def __init__(self, path):
         self.path = path
-        self.queue = Queue.Queue()
+        self.queue = Queue.PriorityQueue()
         self.watcher = Watcher(path, self.queue)
         self.walker = Walker(path, self.queue, Config.is_rescan_forced())
         self.reader = Reader(self.queue)

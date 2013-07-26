@@ -32,7 +32,7 @@ class Reader(threading.Thread):
         start = time.clock()
 
         while True:
-            update = self.queue.get()
+            (priority, update) = self.queue.get()
             
             if self.stop_thread:
                 break
@@ -47,7 +47,7 @@ class Reader(threading.Thread):
 
     def stop(self):
         self.stop_thread = True
-        self.queue.put(False)
+        self.queue.put((0, False))
 
     def handle_file(self, update, session):
         if not AutoFile.is_supported(update.path):
@@ -166,6 +166,7 @@ class Reader(threading.Thread):
                 
     def handle_deletion(self, filename, session):
         for f in session.query(File).filter(File.path.like(filename + '%')):
+            cherrypy.log("Deleting '%s'" % (f.path), self.LOG_TAG)
             session.delete(f)
 
 

@@ -1,6 +1,7 @@
 import pyinotify
 import threading
-import os.path
+import time
+import os
 
 import cherrypy
 
@@ -12,6 +13,9 @@ class Watcher(object):
 
     class EventHandler(pyinotify.ProcessEvent):
         LOG_TAG = "WATCHEVENTHANDLER"
+        UPDATE_DELAY = 2.0
+
+        current_timer = None
 
         def __init__(self, queue):
             pyinotify.ProcessEvent.__init__(self)
@@ -29,14 +33,37 @@ class Watcher(object):
             
         def process_IN_MOVED_TO(self, event):
             self.handle_update(event)
-                    
-        def handle_update(self, event):
-            cherrypy.log("Update on '%s'" % (event.pathname), self.LOG_TAG)
 
-            if os.path.isdir(event.pathname):
-                Walker(event.pathname, self.queue).start()
-            else:
-                self.queue.put(PathUpdate(event.pathname, False))
+        def process_IN_MODIFY(self, event):
+            self.handle_update(event)
+
+        def process_IN_CREATE(self, event):
+            self.handle_update(event)
+
+        def post_timer(self, pathname):
+            def update():
+                if os.path.isdir(pathname):
+                    Walker(pathname, self.queue, False, 1).start()
+                else:
+                    self.queue.put((1, PathUpdate(pathname, False)))
+
+            self.current_timer = threading.Timer(
+                self.UPDATE_DELAY, update)
+            self.current_timer.ts = time.time()
+            self.current_timer.target = pathname
+
+            self.current_timer.start()
+
+        def is_timer_scheduled(self, pathname):
+            return self.current_timer is not None and \
+                self.current_timer.target == pathname and \
+                time.time() - self.current_timer.ts < self.UPDATE_DELAY
+
+        def handle_update(self, event):
+            if self.is_timer_scheduled(event.pathname):
+                self.current_timer.cancel()
+
+            self.post_timer(event.pathname)
 
     def __init__(self, path, queue):
         self.path = path
@@ -49,7 +76,9 @@ class Watcher(object):
             pyinotify.IN_CLOSE_WRITE | \
             pyinotify.IN_DELETE | \
             pyinotify.IN_MOVED_FROM | \
-            pyinotify.IN_MOVED_TO
+            pyinotify.IN_MOVED_TO | \
+            pyinotify.IN_MODIFY | \
+            pyinotify.IN_CREATE
         
         handler = self.EventHandler(self.queue)
 

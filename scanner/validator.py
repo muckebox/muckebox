@@ -19,4 +19,4 @@ class Validator(threading.Thread):
         session = Db.get_session()
 
         for f in session.query(File.path):
-            self.queue.put(PathUpdate(f.path, False))
+            self.queue.put((10, PathUpdate(f.path, False)))

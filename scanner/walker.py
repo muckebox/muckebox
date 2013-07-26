@@ -23,7 +23,7 @@ class Walker(threading.Thread):
     def run(self):
         start = time.clock()
 
-        for root, dirs, files in os.walk(unicode(self.path)):
+        for root, dirs, files in os.walk(self.path.decode("utf-8")):
             for f in files:
                 full_path = u"%s/%s" % (root, f)
                 self.queue.put(PathUpdate(full_path, self.force_update))

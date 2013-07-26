@@ -44,7 +44,6 @@ class Reader(threading.Thread):
                 cherrypy.log.error("Cannot read '%s', skipping" % (update.path),
                                    self.LOG_TAG)
                 session.rollback()
-                raise
 
     def stop(self):
         self.stop_thread = True

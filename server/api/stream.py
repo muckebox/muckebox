@@ -21,9 +21,9 @@ class StreamAPI(object):
         }
 
     @cherrypy.expose
-    def default(self, trackid, format = False, quality = 'high',
+    def default(self, track_id, format = False, quality = 'high',
                 max_bits_per_sample = 16, max_sample_rate = 48000):
-        if not (trackid and trackid.isdigit()):
+        if not (track_id and track_id.isdigit()):
             raise cherrypy.HTTPError(400)
 
         if quality not in self.QUALITY_STRINGS:
@@ -39,12 +39,13 @@ class StreamAPI(object):
         ThreadManager.status("Stream setup")
 
         session = Db.get_session()
-        track = self.get_track(int(trackid), session)
+        track = self.get_track(int(track_id), session)
 
         queue = Queue.Queue()
 
         input_config = AutoTranscoder.InputConfiguration(
             id = track.stringid,
+            track_id = track_id,
             path = track.file.path,
             bits_per_sample = track.bits_per_sample,
             sample_rate = track.sample_rate

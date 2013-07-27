@@ -74,6 +74,12 @@ class AutoTranscoder(BaseTranscoder):
     def abort(self):
         self.transcoder.abort()
 
+    def pause(self):
+        self.transcoder.pause()
+        
+    def resume(self):
+        self.transcoder.resume()
+
     def has_completed(self):
         return self.transcoder.has_completed()
 

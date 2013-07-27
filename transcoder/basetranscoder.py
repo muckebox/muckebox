@@ -2,6 +2,7 @@ import threading
 import collections
 
 from abc import abstractmethod
+from transcodermanager import TranscoderManager
 
 class BaseTranscoder(threading.Thread):
     LOG_TAG = "BASETRANSCODER"
@@ -16,6 +17,7 @@ class BaseTranscoder(threading.Thread):
 
     InputConfiguration = collections.namedtuple('InputConfiguration', [
             'id',
+            'track_id',
             'path',
             'bits_per_sample',
             'sample_rate'
@@ -27,12 +29,15 @@ class BaseTranscoder(threading.Thread):
         MEDIUM  = 3
         HIGH    = 4
         HIGHEST = 5
+
+    listener = set()
         
     def __init__(self, input = False, queue = False, output = False):
         threading.Thread.__init__(self)
 
         if input:
             self.set_source_file(input.path)
+            self.set_track_id(input.track_id)
             self.set_input_bits_per_sample(input.bits_per_sample)
             self.set_input_sample_rate(input.sample_rate)
 
@@ -98,6 +103,12 @@ class BaseTranscoder(threading.Thread):
 
         return self.max_sample_rate
 
+    def set_track_id(self, track_id):
+        self.track_id = track_id
+
+    def get_track_id(self, track_id):
+        return self.track_id
+
     @abstractmethod
     def set_quality(self, quality):
         pass
@@ -122,3 +133,22 @@ class BaseTranscoder(threading.Thread):
     def abort(self):
         pass
 
+    @abstractmethod
+    def pause(self):
+        pass
+
+    @abstractmethod
+    def resume(self):
+        pass
+
+    def add_listener(self, listener):
+        self.listeners.add(listener)
+        
+    def remove_listener(self, listener):
+        self.listeners.discard(listener)
+
+    def has_listeners(self):
+        return len(self.listeners) > 0
+
+    def done(self):
+        TranscoderManager.on_transcoding_done(self)

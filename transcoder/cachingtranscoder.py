@@ -79,3 +79,9 @@ class CachingTranscoder(BaseTranscoder):
 
     def abort(self):
         self.transcoder.abort()
+
+    def pause(self):
+        self.transcoder.pause()
+        
+    def resume(self):
+        self.transcoder.resume()

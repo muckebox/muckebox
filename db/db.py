@@ -1,13 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from models.file import File
-from models.track import Track
-from models.album import Album
-from models.artist import Artist
-from models.transcoding import Transcoding
+from models import File
+from models import Track
+from models import Album
+from models import Artist
+from models import Transcoding
 
-from models.base import Base
+from models import Base
 
 class Db(object):
     engine = False

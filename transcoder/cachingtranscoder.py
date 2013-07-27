@@ -1,28 +1,35 @@
 import os
 import Queue
 
+import cherrypy
+
+from wrappingtranscoder import WrappingTranscoder
 from basetranscoder import BaseTranscoder
 
-from db.models.transcoding import Transcoding
-from db.db import Db
-from utils.threadmanager import ThreadManager
+from db import Db
+from db.models import Transcoding
+from utils import ThreadManager
 
 # Wraps another transcoder and adds writing output to a cache
 
-class CachingTranscoder(BaseTranscoder):
+class CachingTranscoder(WrappingTranscoder):
     LOG_TAG = "CACHINGTRANSCODER"
 
     def __init__(self, wrapped_transcoder, source_path, output_path):
         self.transcoder = wrapped_transcoder
         self.source_path = source_path
         self.output_path = output_path
+
         self.slave_queue = Queue.Queue()
 
-        BaseTranscoder.__init__(self, False, self.transcoder.queue)
+        WrappingTranscoder.__init__(self, False)
 
-        self.transcoder.set_output_queue(self.slave_queue)
+        self.transcoder.add_listener(self.slave_queue)
 
         self.name = self.LOG_TAG
+
+    def get_stream_path(self):
+        return self.output_path
 
     def set_quality(self, quality):
         self.quality = quality
@@ -32,31 +39,20 @@ class CachingTranscoder(BaseTranscoder):
         self.source_path = source_path
         self.transcoder.set_source_file(source_file)
 
-    def get_suffix(self):
-        return self.transcoder.get_suffix()
-
-    def get_mime_type(self):
-        return self.transcoder.get_mime_type()
-
     def run(self):
         self.transcoder.start()
 
-        with open(self.output_path, 'wb') as f:
+        with open(self.output_path, 'wb') as self.file_handle:
             while True:
-                ThreadManager.status("slave_queue.get()")
-
                 block = self.slave_queue.get()
 
-                ThreadManager.status("queue.put()")
+                if block is not None:
+                    self.file_handle.write(block)
 
-                self.queue.put(block)
+                self.send_to_listeners(block)
 
                 if block is None:
                     break
-
-                f.write(block)
-
-        ThreadManager.status("complete")
 
         self.transcoder.join()
 
@@ -77,11 +73,9 @@ class CachingTranscoder(BaseTranscoder):
         else:
             os.unlink(self.output_path)
 
-    def abort(self):
-        self.transcoder.abort()
+    def flush(self):
+        if self.file_handle:
+            self.file_handle.flush()
 
-    def pause(self):
-        self.transcoder.pause()
-        
-    def resume(self):
-        self.transcoder.resume()
+    def get_stream_path(self):
+        return self.output_path

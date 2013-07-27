@@ -4,18 +4,19 @@ import logging
 
 import cherrypy
 
-from basetranscoder import BaseTranscoder
+from cachingtranscoder import CachingTranscoder
+from wrappingtranscoder import WrappingTranscoder
+
 from oggtranscoder import OggTranscoder
 from mp3transcoder import MP3Transcoder
 from opustranscoder import OpusTranscoder
 from nulltranscoder import NullTranscoder
-from cachingtranscoder import CachingTranscoder
 
-from db.models.transcoding import Transcoding
-from db.db import Db
-from utils.config import Config
+from db.models import Transcoding
+from db import Db
+from utils import Config
 
-class AutoTranscoder(BaseTranscoder):
+class AutoTranscoder(WrappingTranscoder):
     LOG_TAG = "AUTOTRANSCODER"
 
     TRANSCODER_MAP = {
@@ -24,12 +25,12 @@ class AutoTranscoder(BaseTranscoder):
         'opus': OpusTranscoder
         }
 
-    def __init__(self, input, queue, output):
+    def __init__(self, input, output):
         cached_path = self.get_cached_transcoding(input, output)
 
         if cached_path:
             self.transcoder = NullTranscoder(
-                input._replace(path = cached_path), queue)
+                input._replace(path = cached_path))
         else:
             transcoder_cls = self.get_transcoder(output.format)
 
@@ -37,51 +38,33 @@ class AutoTranscoder(BaseTranscoder):
                 cached_output = output._replace(
                     path = self.get_cached_path(input, output))
 
-                transcoder = transcoder_cls(input, queue, cached_output)
+                transcoder = transcoder_cls(input, cached_output)
                 self.transcoder = CachingTranscoder(transcoder,
                                                     input.path,
                                                     cached_output.path)
-
-                cherrypy.log("Transcoding to %s, output cached at %s" % \
-                                 (cached_output.format, cached_output.path),
-                             self.LOG_TAG)
             else:
                 cherrypy.log("Could not find matching transcoder for '%s'" % \
                                  (output.format),
                              self.LOG_TAG, logging.WARNING)
-                self.transcoder = NullTranscoder(input, queue)
+                self.transcoder = NullTranscoder(input)
 
-        BaseTranscoder.__init__(self, input, queue, output)
-
-    def set_quality(self, quality):
-        self.transcoder.set_quality(quality)
+        WrappingTranscoder.__init__(self, input, output)
 
     def set_source_file(self, path):
         pass
 
-    def get_suffix(self):
-        return self.transcoder.get_suffix()
+    def add_listener(self, listener):
+        self.transcoder.add_listener(listener)
+        
+    def remove_listener(self, listener):
+        self.transcoder.remove_listener(listener)
 
-    def get_mime_type(self):
-        return self.transcoder.get_mime_type()
+    def has_listeners(self):
+        return self.transcoder.has_listeners()
 
     def run(self):
         self.transcoder.start()
         self.transcoder.join()
-
-        cherrypy.log("Done", self.LOG_TAG)
-
-    def abort(self):
-        self.transcoder.abort()
-
-    def pause(self):
-        self.transcoder.pause()
-        
-    def resume(self):
-        self.transcoder.resume()
-
-    def has_completed(self):
-        return self.transcoder.has_completed()
 
     @classmethod
     def get_transcoder(cls, format):

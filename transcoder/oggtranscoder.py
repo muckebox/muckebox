@@ -9,8 +9,8 @@ class OggTranscoder(ShellTranscoder):
         ShellTranscoder.Quality.HIGHEST:        10
         }
 
-    def __init__(self, input, queue, output):
-        ShellTranscoder.__init__(self, input, queue, output)
+    def __init__(self, input, output):
+        ShellTranscoder.__init__(self, input, output)
 
     def get_suffix(self):
         return 'ogg'

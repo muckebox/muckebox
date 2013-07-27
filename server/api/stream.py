@@ -2,10 +2,8 @@ import cherrypy
 import Queue
 import logging
 
-from transcoder.autotranscoder import AutoTranscoder
-from utils.threadmanager import ThreadManager
-from db.models.track import Track
-from db.db import Db
+from transcoder import AutoTranscoder, TranscoderManager
+from utils import ThreadManager
 
 LOG_TAG = 'STREAMAPI'
 
@@ -35,60 +33,43 @@ class StreamAPI(object):
         if not str(max_sample_rate).isdigit():
             raise cherrypy.HTTPError(400)
 
-        ThreadManager.name(LOG_TAG)
-        ThreadManager.status("Stream setup")
-
-        session = Db.get_session()
-        track = self.get_track(int(track_id), session)
-
         queue = Queue.Queue()
-
-        input_config = AutoTranscoder.InputConfiguration(
-            id = track.stringid,
-            track_id = track_id,
-            path = track.file.path,
-            bits_per_sample = track.bits_per_sample,
-            sample_rate = track.sample_rate
-            )
 
         output_config = AutoTranscoder.OutputConfiguration(
             path = False,
             format = format,
             quality = self.QUALITY_STRINGS[quality],
-            max_bits_per_sample = max_bits_per_sample,
-            max_sample_rate = max_sample_rate)
+            max_bits_per_sample = int(max_bits_per_sample),
+            max_sample_rate = int(max_sample_rate),
+            offset = 0)
 
-        transcoder = AutoTranscoder(input_config, queue, output_config)
+        transcoder = TranscoderManager.get_transcoder(
+            int(track_id), output_config, queue)
+
+        if not transcoder:
+            raise cherrypy.HTTPError(404)
 
         cherrypy.response.headers["Content-Type"] = transcoder.get_mime_type()
-
-        transcoder.start()
 
         return self.stream(transcoder, queue)
 
     @staticmethod
     def stream(transcoder, queue):
-        while True:
-            ThreadManager.status("queue.get()")
-            block = queue.get()
+        try:
+            while True:
+                block = queue.get()
+                
+                if block is None:
+                    transcoder.join()
+                    break
 
-            if block is None:
-                transcoder.join()
-                break
-
-            try:
-                ThreadManager.status("yield")
-                yield block
-            except GeneratorExit:
-                cherrypy.log('Connection interrupted, stopping transcoding',
-                             LOG_TAG, logging.WARNING)
-                transcoder.abort()
-                raise
-
-        ThreadManager.status("done")
-
-    @staticmethod
-    def get_track(trackid, session):
-        return session.query(Track).filter(Track.id == trackid).one()
+                try:
+                    yield block
+                except GeneratorExit:
+                    cherrypy.log('Connection interrupted', LOG_TAG,
+                                 logging.WARNING)
+                    raise
+        finally:
+            transcoder.remove_listener(queue)
 
     default._cp_config = { 'response.stream': True }

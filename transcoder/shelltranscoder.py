@@ -34,7 +34,8 @@ class ShellTranscoder(BaseTranscoder):
         self.path = path
 
     def start_process(self):
-        self.process = subprocess.Popen(self.get_command(),
+        self.command = self.get_command()
+        self.process = subprocess.Popen(self.command,
                                         stdout = subprocess.PIPE,
                                         stderr = self.FNULL,
                                         bufsize = self.BLOCK_SIZE)
@@ -52,6 +53,12 @@ class ShellTranscoder(BaseTranscoder):
                     self.send_to_listeners(block)
                 else:
                     self.process.wait()
+
+                    if self.process.returncode != 0:
+                        cherrypy.log.error(
+                            "Transcoder returned an error (%d), command was " +
+                            "'%s'" % (self.process.returncode, self.command),
+                            self.LOG_TAG)
 
                     if not self.stop:
                         self.set_completed()

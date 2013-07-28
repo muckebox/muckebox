@@ -8,13 +8,10 @@ import cherrypy
 
 from pathupdate import PathUpdate
 
-from utils.config import Config
+from utils import Config
 from mutabrainz.autofile import AutoFile
-from db.models.file import File
-from db.models.track import Track
-from db.models.album import Album
-from db.models.artist import Artist
-from db.db import Db
+from db.models import File, Track, Album, Artist
+from db import Db
 
 class Reader(threading.Thread):
     LOG_TAG = 'READER'
@@ -77,6 +74,7 @@ class Reader(threading.Thread):
         fh.mtime = os.path.getmtime(filename)
 
         self.check_tracks(fh, session)
+        self.delete_unused(session)
         
     def handle_new(self, filename, session):
         fh = File(path = filename, mtime = os.path.getmtime(filename))
@@ -106,6 +104,12 @@ class Reader(threading.Thread):
             dbtrack.artist_id = artist.id
 
             dbtrack.from_dict(track)
+
+    def delete_unused(self, session):
+        session.query(Album).filter(Album.tracks == None). \
+            delete(synchronize_session = False)
+        session.query(Artist).filter(Artist.tracks == None). \
+            delete(synchronize_session = False)
 
     def get_artist(self, name, session):
         try:

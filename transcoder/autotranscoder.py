@@ -30,7 +30,7 @@ class AutoTranscoder(WrappingTranscoder):
 
         if cached_path:
             self.transcoder = NullTranscoder(
-                input._replace(path = cached_path))
+                input._replace(path = cached_path), output.offset)
         else:
             transcoder_cls = self.get_transcoder(output.format)
 
@@ -46,7 +46,7 @@ class AutoTranscoder(WrappingTranscoder):
                 cherrypy.log("Could not find matching transcoder for '%s'" % \
                                  (output.format),
                              self.LOG_TAG, logging.WARNING)
-                self.transcoder = NullTranscoder(input)
+                self.transcoder = NullTranscoder(input, output.offset)
 
         WrappingTranscoder.__init__(self, input, output)
 

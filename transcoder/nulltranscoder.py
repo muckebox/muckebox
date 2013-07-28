@@ -8,10 +8,11 @@ class NullTranscoder(BaseTranscoder):
     pause_lock = threading.Lock()
     paused = False
 
-    def __init__(self, input):
+    def __init__(self, input, offset = 0):
         BaseTranscoder.__init__(self, input)
 
         self.stop = False
+        self.offset = offset
 
     def set_quality(self, quality):
         pass
@@ -31,6 +32,8 @@ class NullTranscoder(BaseTranscoder):
     def run(self):
         try:
             with open(self.path, 'rb') as self.file_handle:
+                self.file_handle.seek(self.offset)
+
                 while not self.stop:
                     block = self.file_handle.read(self.BLOCK_SIZE)
 

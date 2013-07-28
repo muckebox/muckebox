@@ -25,8 +25,6 @@ class Reader(threading.Thread):
 
     def run(self):
         session = Db().get_session()
-        i = 0
-        start = time.clock()
 
         while True:
             (priority, update) = self.queue.get()
@@ -175,6 +173,8 @@ class Reader(threading.Thread):
         for f in session.query(File).filter(File.path.like(filename + '%')):
             cherrypy.log("Deleting '%s'" % (f.path), self.LOG_TAG)
             session.delete(f)
+
+        self.delete_unused(session)
 
 
             

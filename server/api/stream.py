@@ -1,14 +1,13 @@
 import cherrypy
 import Queue
 import logging
+import sys
 
 from transcoder import AutoTranscoder, TranscoderManager
 from utils import ThreadManager
 
-LOG_TAG = 'STREAMAPI'
-
 class StreamAPI(object):
-    BLOCK_SIZE = 32 * 1024
+    LOG_TAG = 'STREAMAPI'
 
     QUALITY_STRINGS = {
         'lowest':       AutoTranscoder.Quality.LOWEST,
@@ -41,7 +40,7 @@ class StreamAPI(object):
             quality = self.QUALITY_STRINGS[quality],
             max_bits_per_sample = int(max_bits_per_sample),
             max_sample_rate = int(max_sample_rate),
-            offset = 0)
+            offset = self.get_range_offset())
 
         transcoder = TranscoderManager.get_transcoder(
             int(track_id), output_config, queue)
@@ -53,8 +52,18 @@ class StreamAPI(object):
 
         return self.stream(transcoder, queue)
 
-    @staticmethod
-    def stream(transcoder, queue):
+    def get_range_offset(self):
+        header = cherrypy.request.headers.get('Range', 'bytes=0-')
+        ranges = cherrypy.lib.httputil.get_ranges(header, sys.maxint)
+
+        if ranges is None:
+            return 0
+
+        first_offset = ranges[0][0]
+
+        return first_offset
+
+    def stream(self, transcoder, queue):
         try:
             while True:
                 block = queue.get()
@@ -66,7 +75,7 @@ class StreamAPI(object):
                 try:
                     yield block
                 except GeneratorExit:
-                    cherrypy.log('Connection interrupted', LOG_TAG,
+                    cherrypy.log('Connection interrupted', self.LOG_TAG,
                                  logging.WARNING)
                     raise
         finally:

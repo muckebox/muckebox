@@ -102,6 +102,9 @@ class Reader(threading.Thread):
                 album.tracks.append(dbtrack)
                 artist.tracks.append(dbtrack)
 
+            dbtrack.album_id = album.id
+            dbtrack.artist_id = artist.id
+
             dbtrack.from_dict(track)
 
     def get_artist(self, name, session):

@@ -1,4 +1,5 @@
 import mmap
+import collections
 from threading import Lock
 
 import cherrypy
@@ -14,6 +15,11 @@ from db import Db
 
 class TranscoderManager():
     LOG_TAG = "TRANSCODERMANAGER"
+
+    Request = collections.namedtuple('Request', [
+            'track_id',
+            'config'
+            ])
 
     active = set()
     paused = set()
@@ -41,17 +47,17 @@ class TranscoderManager():
                 mm.close()
 
     @classmethod
-    def get_active_transcoder(cls, track_id, config, queue):
+    def get_active_transcoder(cls, request, queue):
         for t in cls.active.union(cls.paused):
-            if t.get_track_id() == track_id:
+            if t.get_track_id() == request.track_id:
                 cherrypy.log("Found active transcoder for %d, re-using" % \
-                                 (track_id), cls.LOG_TAG)
+                                 (request.track_id), cls.LOG_TAG)
 
                 cls.pause_transcoder(t)
 
                 t.flush()
 
-                cls.send_progress(t.get_stream_path(), config.offset,
+                cls.send_progress(t.get_stream_path(), request.config.offset,
                                   t.get_progress(), queue)
 
                 return t
@@ -59,32 +65,32 @@ class TranscoderManager():
         return False
 
     @classmethod
-    def get_track(cls, trackid, session):
+    def get_track(cls, track_id, session):
         try:
-            return session.query(Track).filter(Track.id == trackid).one()
+            return session.query(Track).filter(Track.id == track_id).one()
         except sqlalchemy.orm.exc.NoResultFound:
             return False
 
     @classmethod
-    def get_new_transcoder(cls, track_id, output_config):
-        cherrypy.log("Creating new transcoder for %d" % (track_id),
+    def get_new_transcoder(cls, request):
+        cherrypy.log("Creating new transcoder for %d" % (request.track_id),
                      cls.LOG_TAG)
 
         session = Db.get_session()
-        track = cls.get_track(int(track_id), session)
+        track = cls.get_track(int(request.track_id), session)
 
         if not track:
             return False
 
         input_config = AutoTranscoder.InputConfiguration(
             id = track.stringid,
-            track_id = track_id,
+            track_id = request.track_id,
             path = track.file.path,
             bits_per_sample = track.bits_per_sample,
             sample_rate = track.sample_rate
             )
 
-        transcoder = AutoTranscoder(input_config, output_config)
+        transcoder = AutoTranscoder(input_config, request.config)
         transcoder.set_state_listener(cls)
 
         return transcoder
@@ -112,18 +118,18 @@ class TranscoderManager():
                 cls.pause_transcoder(t)
 
     @classmethod
-    def get_transcoder(cls, track_id, output_config, queue = False):
+    def get_transcoder(cls, request, queue = False):
         with LockGuard(cls.lock) as l:
-            ret = cls.get_active_transcoder(track_id, output_config, queue)
+            ret = cls.get_active_transcoder(request, queue)
 
             if not ret:
-                ret = cls.get_new_transcoder(track_id, output_config)
+                ret = cls.get_new_transcoder(request)
 
                 if not ret:
                     return False
 
-            while track_id in cls.queue:
-                cls.queue.remove(track_id)
+            while request in cls.queue:
+                cls.queue.remove(request)
 
             cls.pause_free_running(ret)
 

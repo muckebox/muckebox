@@ -9,6 +9,7 @@ from utils import LockGuard
 
 from basetranscoder import BaseTranscoder
 from autotranscoder import AutoTranscoder
+from cachingtranscoder import CachingTranscoder
 
 from db.models import Track
 from db import Db
@@ -72,10 +73,7 @@ class TranscoderManager():
             return False
 
     @classmethod
-    def get_new_transcoder(cls, request):
-        cherrypy.log("Creating new transcoder for %d" % (request.track_id),
-                     cls.LOG_TAG)
-
+    def get_input_config(cls, request):
         session = Db.get_session()
         track = cls.get_track(int(request.track_id), session)
 
@@ -89,6 +87,18 @@ class TranscoderManager():
             bits_per_sample = track.bits_per_sample,
             sample_rate = track.sample_rate
             )
+
+        return input_config
+
+    @classmethod
+    def get_new_transcoder(cls, request):
+        cherrypy.log("Creating new transcoder for %d" % (request.track_id),
+                     cls.LOG_TAG)
+        
+        input_config = cls.get_input_config(request)
+
+        if not input_config:
+            return False
 
         transcoder = AutoTranscoder(input_config, request.config)
         transcoder.set_state_listener(cls)
@@ -111,37 +121,44 @@ class TranscoderManager():
 
     @classmethod
     def pause_free_running(cls, new_transcoder):
-        for t in cls.active:
+        for t in cls.active.copy():
             if not t.has_listeners() and t != new_transcoder:
                 cherrypy.log("Pausing free-running transcoder for %d" % \
                                  (t.get_track_id()), cls.LOG_TAG)
                 cls.pause_transcoder(t)
 
     @classmethod
-    def get_transcoder(cls, request, queue = False):
+    def ensure_transcoder(cls, request, queue = False):
+        ret = cls.get_active_transcoder(request, queue)
+
+        if not ret:
+            ret = cls.get_new_transcoder(request)
+
+        if not ret:
+            return False
+
+        cls.pause_free_running(ret)
+
+        if queue:
+            ret.add_listener(queue)
+
+        if not ret.is_alive():
+            ret.start()
+
+        cls.resume_transcoder(ret)
+
+        return ret
+
+    @classmethod
+    def get_transcoder(cls, request, queue):
         with LockGuard(cls.lock) as l:
-            ret = cls.get_active_transcoder(request, queue)
+            return cls.ensure_transcoder(request, queue)
 
-            if not ret:
-                ret = cls.get_new_transcoder(request)
-
-                if not ret:
-                    return False
-
-            while request in cls.queue:
-                cls.queue.remove(request)
-
-            cls.pause_free_running(ret)
-
-            if queue:
-                ret.add_listener(queue)
-
-            if not ret.is_alive():
-                ret.start()
-
-            cls.resume_transcoder(ret)
-
-            return ret
+    @classmethod
+    def enqueue_request(cls, request):
+        with LockGuard(cls.lock) as l:
+            cls.queue.append(request)
+            cls.try_starting_next()
 
     @classmethod
     def on_transcoding_done(cls, transcoder):
@@ -162,10 +179,23 @@ class TranscoderManager():
                 cls.pause_transcoder(transcoder)
 
     @classmethod
-    def try_starting_next(cls):
-        if len(cls.active) > 0:
-            return
+    def try_starting_queue(cls):
+        if len(cls.queue) > 0:
+            request = cls.queue.pop()
+            input_config = cls.get_input_config(request)
 
+            if CachingTranscoder.get_cached_transcoding(input_config,
+                                                        request.config):
+                return False
+
+            cls.ensure_transcoder(request)
+
+            return True
+            
+        return False
+
+    @classmethod
+    def try_resuming(cls):
         if len(cls.paused) > 0:
             t = cls.paused.pop()
 
@@ -176,4 +206,12 @@ class TranscoderManager():
 
             return
 
-        # XXX handle queue
+    @classmethod
+    def try_starting_next(cls):
+        if len(cls.active) > 0:
+            return
+
+        if cls.try_starting_queue():
+            return
+
+        cls.try_resuming()

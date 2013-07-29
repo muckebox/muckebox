@@ -3,6 +3,7 @@ from albums import AlbumsAPI
 from tracks import TracksAPI
 
 from stream import StreamAPI
+from hint import HintAPI
 
 from artwork import ArtworkAPI
 
@@ -15,6 +16,7 @@ class API(object):
     tracks = TracksAPI()
 
     stream = StreamAPI()
+    hint = HintAPI()
 
     artwork = ArtworkAPI()
 

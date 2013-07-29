@@ -15,7 +15,7 @@ from db.db import Db
 from utils.config import Config
 
 class Muckebox(object):
-    LOG_TAG = "Muckebox"
+    LOG_TAG = "MUCKEBOX"
 
     instance = False
 
@@ -41,27 +41,28 @@ class Muckebox(object):
 
         signal.pause()
 
-    def main(self):
-        Config.parse_args()
-
-        library_path = Config.get_library_path()
+    def create_paths(self):
         cache_path = Config.get_cache_path()
         log_path = Config.get_log_path()
-        dbpath = Config.get_db_path()
-
+        
         if not os.path.exists(cache_path):
             os.makedirs(cache_path)
 
         if not os.path.exists(log_path):
             os.makedirs(log_path)
 
+    def main(self):
+        Config.parse_args()
+        
+        self.create_paths()
+
         self.server = Server()
         self.server.configure()
 
-        Db.open(dbpath, Config.is_verbose())
+        Db.open(Config.get_db_path(), Config.is_verbose())
 
         if Config.is_scanner_enabled():
-            self.scanner = Scanner(library_path)
+            self.scanner = Scanner(Config.get_library_path())
             self.scanner.start()
         else:
             self.scanner = False

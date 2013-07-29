@@ -49,7 +49,7 @@ class BaseTranscoder(threading.Thread):
         self.listeners = set()
         self.listener_lock = threading.Lock()
 
-        self.done_listener = False
+        self.state_listener = False
 
         self.bytes_total = 0
 
@@ -65,8 +65,8 @@ class BaseTranscoder(threading.Thread):
     def has_completed(self):
         return self.completed
 
-    def set_done_listener(self, listener):
-        self.done_listener = listener
+    def set_state_listener(self, listener):
+        self.state_listener = listener
 
     def wait(self):
         if not self.has_finished():
@@ -158,6 +158,9 @@ class BaseTranscoder(threading.Thread):
         with LockGuard(self.listener_lock) as l:
             self.listeners.discard(listener)
 
+        if len(self.listeners) == 0:
+            self.on_free_running(self)
+
     def has_listeners(self):
         with LockGuard(self.listener_lock) as l:
             return len(self.listeners) > 0
@@ -184,6 +187,10 @@ class BaseTranscoder(threading.Thread):
         self.on_transcoding_done(self)
 
     def on_transcoding_done(self, transcoder):
-        if self.done_listener:
-            self.done_listener.on_transcoding_done(self)
+        if self.state_listener:
+            self.state_listener.on_transcoding_done(self)
+
+    def on_free_running(self, transcoder):
+        if self.state_listener:
+            self.state_listener.on_free_running(self)
         

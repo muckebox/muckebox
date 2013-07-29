@@ -4,7 +4,7 @@ class WrappingTranscoder(BaseTranscoder):
     def __init__(self, input_config = False, output_config = False):
         BaseTranscoder.__init__(self, input_config, output_config)
 
-        self.transcoder.set_done_listener(self)
+        self.transcoder.set_state_listener(self)
 
     def set_quality(self, quality):
         self.transcoder.set_quality(quality)

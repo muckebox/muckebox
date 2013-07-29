@@ -16,6 +16,7 @@ class TranscoderManager():
     LOG_TAG = "TRANSCODERMANAGER"
 
     active = set()
+    paused = set()
 
     queue = [ ]
 
@@ -41,12 +42,13 @@ class TranscoderManager():
 
     @classmethod
     def get_active_transcoder(cls, track_id, config, queue):
-        for t in cls.active:
+        for t in cls.active.union(cls.paused):
             if t.get_track_id() == track_id:
                 cherrypy.log("Found active transcoder for %d, re-using" % \
                                  (track_id), cls.LOG_TAG)
 
-                t.pause()
+                cls.pause_transcoder(t)
+
                 t.flush()
 
                 cls.send_progress(t.get_stream_path(), config.offset,
@@ -83,9 +85,23 @@ class TranscoderManager():
             )
 
         transcoder = AutoTranscoder(input_config, output_config)
-        transcoder.set_done_listener(cls)
+        transcoder.set_state_listener(cls)
 
         return transcoder
+
+    @classmethod
+    def pause_transcoder(cls, transcoder):
+        transcoder.pause()
+
+        cls.active.discard(transcoder)
+        cls.paused.add(transcoder)
+
+    @classmethod
+    def resume_transcoder(cls, transcoder):
+        cls.paused.discard(transcoder)
+        cls.active.add(transcoder)
+
+        transcoder.resume()
 
     @classmethod
     def pause_free_running(cls, new_transcoder):
@@ -93,7 +109,7 @@ class TranscoderManager():
             if not t.has_listeners() and t != new_transcoder:
                 cherrypy.log("Pausing free-running transcoder for %d" % \
                                  (t.get_track_id()), cls.LOG_TAG)
-                t.pause()
+                cls.pause_transcoder(t)
 
     @classmethod
     def get_transcoder(cls, track_id, output_config, queue = False):
@@ -106,8 +122,6 @@ class TranscoderManager():
                 if not ret:
                     return False
 
-                cls.active.add(ret)
-
             while track_id in cls.queue:
                 cls.queue.remove(track_id)
 
@@ -119,7 +133,7 @@ class TranscoderManager():
             if not ret.is_alive():
                 ret.start()
 
-            ret.resume()
+            cls.resume_transcoder(ret)
 
             return ret
 
@@ -133,16 +147,27 @@ class TranscoderManager():
             cls.try_starting_next()
 
     @classmethod
-    def try_starting_next(cls):
-        for t in cls.active:
-            if not t.is_paused():
-                return
+    def on_free_running(cls, transcoder):
+        with LockGuard(cls.lock) as l:
+            if len(cls.active) > 1:
+                cherrypy.log("Transcoder for %d became free-running, pausing" %
+                             (transcoder.get_track_id()), cls.LOG_TAG)
 
-        for t in cls.active:
-            if t.is_paused():
-                cherrypy.log("Resuming free-running transcoder for %d" % \
-                                 (t.get_track_id()), cls.LOG_TAG)
-                t.resume()
-                return
+                cls.pause_transcoder(transcoder)
+
+    @classmethod
+    def try_starting_next(cls):
+        if len(cls.active) > 0:
+            return
+
+        if len(cls.paused) > 0:
+            t = cls.paused.pop()
+
+            cherrypy.log("Resuming free-running transcoder for %d" % \
+                             (t.get_track_id()), cls.LOG_TAG)
+
+            cls.resume_transcoder(t)
+
+            return
 
         # XXX handle queue

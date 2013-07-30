@@ -84,11 +84,17 @@ class Reader(threading.Thread):
         file = AutoFile(fh.path)
 
         for track in file.get_tracks():
-            artist = self.get_artist(track['displayartist'], session)
-            (album, artist) = self.get_album(artist,
-                                             track.get('album'),
-                                             track.get('directory'),
-                                             session)
+            artist = self.get_artist(track['artist'], session)
+
+            if 'albumartist' in track:
+                album_artist = self.get_artist(track['albumartist'], session)
+            else:
+                album_artist = artist
+
+            (album, album_artist) = self.get_album(album_artist,
+                                                   track.get('album'),
+                                                   track.get('directory'),
+                                                   session)
 
             try:
                 dbtrack = self.get_dbtrack(track['stringid'], session)
@@ -98,8 +104,11 @@ class Reader(threading.Thread):
                 album.tracks.append(dbtrack)
                 artist.tracks.append(dbtrack)
 
+            album.artist_id = album_artist.id
+
             dbtrack.album_id = album.id
             dbtrack.artist_id = artist.id
+            dbtrack.album_artist_id = album_artist.id
 
             dbtrack.from_dict(track)
 

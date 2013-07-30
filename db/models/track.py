@@ -25,8 +25,17 @@ class Track(Base):
     title = Column(String)
 
     album_id = Column(Integer, ForeignKey(Album.id))
-    artist_id = Column(Integer, ForeignKey(Artist.id))
 
+    artist_id = Column(Integer, ForeignKey(Artist.id))
+    album_artist_id = Column(Integer, ForeignKey(Artist.id))
+
+    artist = relationship(
+        'Artist', primaryjoin = 'Artist.id == Track.artist_id',
+        backref = 'tracks')
+    album_artist = relationship(
+        'Artist', primaryjoin = 'Artist.id == Track.album_artist_id')
+
+    # XXX deprecated
     displayartist = Column(String, index = True)
 
     date = Column(String)

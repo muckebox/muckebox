@@ -9,6 +9,3 @@ class Artist(Base):
     id = Column(Integer, primary_key = True)
 
     name = Column(String, index = True, unique = True)
-
-    albums = relationship('Album', backref = 'artist', cascade = 'all, delete-orphan')
-    tracks = relationship('Track', backref = 'artist', cascade = 'all, delete-orphan')

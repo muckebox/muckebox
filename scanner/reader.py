@@ -15,11 +15,13 @@ from db import Db
 
 class Reader(threading.Thread):
     LOG_TAG = 'READER'
+    UPDATE_DELAY = 10
 
     def __init__(self, queue):
         threading.Thread.__init__(self)
         self.queue = queue
         self.stop_thread = False
+        self.current_timer = False
 
         self.name = self.LOG_TAG
 
@@ -72,7 +74,7 @@ class Reader(threading.Thread):
         fh.mtime = os.path.getmtime(filename)
 
         self.check_tracks(fh, session)
-        self.delete_unused(session)
+        self.delete_unused()
         
     def handle_new(self, filename, session):
         fh = File(path = filename, mtime = os.path.getmtime(filename))
@@ -84,7 +86,7 @@ class Reader(threading.Thread):
         file = AutoFile(fh.path)
 
         for track in file.get_tracks():
-            artist = self.get_artist(track['artist'], session)
+            artist = self.get_artist(track.get('artist'), session)
 
             if 'albumartist' in track:
                 album_artist = self.get_artist(track['albumartist'], session)
@@ -104,19 +106,37 @@ class Reader(threading.Thread):
                 album.tracks.append(dbtrack)
                 artist.tracks.append(dbtrack)
 
-            album.artist_id = album_artist.id
+            if album.artist_id != album_artist.id:
+                album.artist_id = album_artist.id
 
-            dbtrack.album_id = album.id
-            dbtrack.artist_id = artist.id
-            dbtrack.album_artist_id = album_artist.id
+            if dbtrack.album_id != album.id:
+                dbtrack.album_id = album.id
+            if dbtrack.artist_id != artist.id:
+                dbtrack.artist_id = artist.id
+            if dbtrack.album_artist_id != album_artist.id:
+                dbtrack.album_artist_id = album_artist.id
 
             dbtrack.from_dict(track)
 
-    def delete_unused(self, session):
-        session.query(Album).filter(Album.tracks == None). \
-            delete(synchronize_session = False)
-        session.query(Artist).filter(Artist.tracks == None). \
-            delete(synchronize_session = False)
+    def delete_unused(self):
+        def do_delete():
+            session = Db().get_session()
+
+            session.query(Album).filter(Album.tracks == None). \
+                delete(synchronize_session = False)
+            session.query(Artist).filter(Artist.tracks == None). \
+                delete(synchronize_session = False)
+
+        if self.current_timer:
+            try:
+                self.current_timer.cancel()
+            except:
+                pass
+
+        self.current_timer = threading.Timer(
+            self.UPDATE_DELAY, do_delete)
+        self.current_timer.ts = time.time()
+        self.current_timer.start()
 
     def get_artist(self, name, session):
         try:
@@ -183,7 +203,7 @@ class Reader(threading.Thread):
             cherrypy.log("Deleting '%s'" % (f.path), self.LOG_TAG)
             session.delete(f)
 
-        self.delete_unused(session)
+        self.delete_unused()
 
 
             

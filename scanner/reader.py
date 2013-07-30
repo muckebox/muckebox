@@ -129,10 +129,21 @@ class Reader(threading.Thread):
         def do_delete():
             session = Db().get_session()
 
-            session.query(Album).filter(Album.tracks == None). \
+            count = session.query(Album).filter(Album.tracks == None). \
                 delete(synchronize_session = False)
-            session.query(Artist).filter(Artist.tracks == None). \
+
+            if count > 0:
+                cherrypy.log("Deleted %d orphaned album(s)" % (count),
+                             self.LOG_TAG)
+
+            count = session.query(Artist).filter(Artist.tracks == None). \
                 delete(synchronize_session = False)
+
+            if count > 0:
+                cherrypy.log("Deleted %d orphaned artist(s)" % (count),
+                             self.LOG_TAG)
+
+            session.commit()
 
         if self.current_timer:
             try:
@@ -142,7 +153,6 @@ class Reader(threading.Thread):
 
         self.current_timer = threading.Timer(
             self.UPDATE_DELAY, do_delete)
-        self.current_timer.ts = time.time()
         self.current_timer.start()
 
     def get_artist(self, name, session):

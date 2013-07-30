@@ -88,15 +88,15 @@ class Reader(threading.Thread):
         for track in file.get_tracks():
             artist = self.get_artist(track.get('artist'), session)
 
-            if 'albumartist' in track:
-                album_artist = self.get_artist(track['albumartist'], session)
-            else:
-                album_artist = artist
+            (album_artist, force_solo) = self.get_album_artist(track,
+                                                               artist,
+                                                               session)
 
             (album, album_artist) = self.get_album(album_artist,
                                                    track.get('album'),
                                                    track.get('directory'),
-                                                   session)
+                                                   session,
+                                                   force_solo)
 
             try:
                 dbtrack = self.get_dbtrack(track['stringid'], session)
@@ -152,10 +152,20 @@ class Reader(threading.Thread):
 
             return ret
 
-    def get_album(self, artist, title, directory, session):
+    def get_album_artist(self, track, artist, session):
+        has_album_artist = ('albumartist' in track)
+
+        if has_album_artist:
+            album_artist = self.get_artist(track.get('albumartist'), session)
+        else:
+            album_artist = self.get_artist(track.get('artist'), session)
+        
+        return (album_artist, has_album_artist)
+
+    def get_album(self, artist, title, directory, session, force_solo = False):
         ret = self.get_solo_album(artist, title, session)
 
-        if not ret:
+        if not ret and not force_solo:
             ret = self.get_va_album(artist, title, directory, session)
 
         if not ret:

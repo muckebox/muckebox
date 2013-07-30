@@ -57,8 +57,9 @@ class ShellTranscoder(BaseTranscoder):
                     if self.process.returncode != 0 and \
                             self.process.returncode is not None:
                         cherrypy.log.error(
-                            "Transcoder returned an error (%d), command was " +
-                            "'%s'" % (self.process.returncode, self.command),
+                            ("Transcoder returned an error (%d), command " +
+                             "was '%s'") % (self.process.returncode,
+                                            self.command),
                             self.LOG_TAG)
 
                     if not self.stop:

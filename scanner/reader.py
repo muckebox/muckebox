@@ -106,17 +106,22 @@ class Reader(threading.Thread):
                 album.tracks.append(dbtrack)
                 artist.tracks.append(dbtrack)
 
-            if album.artist_id != album_artist.id:
-                album.artist_id = album_artist.id
-
-            if dbtrack.album_id != album.id:
-                dbtrack.album_id = album.id
-            if dbtrack.artist_id != artist.id:
-                dbtrack.artist_id = artist.id
-            if dbtrack.album_artist_id != album_artist.id:
-                dbtrack.album_artist_id = album_artist.id
+            self.verify_relations(dbtrack, album, artist, album_artist)
 
             dbtrack.from_dict(track)
+
+    def verify_relations(self, track, album, artist, album_artist):
+        if album.artist_id != album_artist.id:
+            album.artist_id = album_artist.id
+
+        if track.album_id != album.id:
+            track.album_id = album.id
+        if track.artist_id != artist.id:
+            track.artist_id = artist.id
+        if track.album_artist_id != album_artist.id:
+            track.album_artist_id = album_artist.id
+
+        self.delete_unused()
 
     def delete_unused(self):
         def do_delete():

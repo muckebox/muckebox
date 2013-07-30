@@ -54,7 +54,6 @@ class AudioFile:
                 if isinstance(track[k], ListType):
                     track[k] = track[k][0]
 
-        track['displayartist'] = '<deprecated>'
         track['title'] = track.get('title') or \
             os.path.splitext(os.path.basename(string_id))[0]
         track['album'] = track.get('album') or \

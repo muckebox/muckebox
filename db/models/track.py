@@ -14,7 +14,8 @@ class Track(Base):
         'directory',
         'bits_per_sample',
         'sample_rate',
-        'file_id'
+        'file_id',
+        'album_artist_id'
         )
 
     id = Column(Integer, primary_key = True)
@@ -35,9 +36,6 @@ class Track(Base):
         backref = 'tracks')
     album_artist = relationship(
         'Artist', primaryjoin = 'Artist.id == Track.album_artist_id')
-
-    # XXX deprecated
-    displayartist = Column(String, index = True)
 
     date = Column(String)
 

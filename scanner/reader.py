@@ -191,6 +191,11 @@ class Reader(threading.Thread):
                 filter(Album.artist_id == artist.id).one(), artist)
         except sqlalchemy.orm.exc.NoResultFound:
             return False
+        except sqlalchemy.orm.exc.MultipleResultsFound:
+            cherrypy.log.error("Multiple solo albums found for '%s' (%d) - '%s'" %
+                               (artist.name, artist.id, title),
+                               self.LOG_TAG)
+            return False
 
     def get_va_album(self, artist, title, directory, session):
         for match in session.query(Album).join(Track). \

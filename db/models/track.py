@@ -13,7 +13,8 @@ class Track(Base):
         'stringid',
         'directory',
         'bits_per_sample',
-        'sample_rate'
+        'sample_rate',
+        'file_id'
         )
 
     id = Column(Integer, primary_key = True)

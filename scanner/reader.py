@@ -35,7 +35,9 @@ class Reader(threading.Thread):
                 break
 
             try:
-                self.handle_file(update, session)
+                self.handle_file(
+                    update._replace(path = os.path.abspath(update.path)),
+                    session)
                 session.commit()
             except:
                 cherrypy.log.error("Cannot read '%s', skipping" % (update.path),

@@ -36,7 +36,7 @@ class Reader(threading.Thread):
 
             try:
                 self.handle_file(
-                    update._replace(path = os.path.abspath(update.path)),
+                    update._replace(path = self.clean_path(update.path)),
                     session)
                 session.commit()
             except:
@@ -47,6 +47,14 @@ class Reader(threading.Thread):
     def stop(self):
         self.stop_thread = True
         self.queue.put((0, False))
+
+    def clean_path(self, path):
+        path = os.path.abspath(path)
+
+        if isinstance(path, unicode):
+            return path
+        else:
+            return unicode(path, errors = 'replace')
 
     def handle_file(self, update, session):
         if not AutoFile.is_supported(update.path):
@@ -136,7 +144,8 @@ class Reader(threading.Thread):
                 cherrypy.log("Deleted %d orphaned album(s)" % (count),
                              self.LOG_TAG)
 
-            count = session.query(Artist).filter(Artist.tracks == None). \
+            count = session.query(Artist).filter(Artist.albums == None). \
+                filter(Artist.tracks == None). \
                 delete(synchronize_session = False)
 
             if count > 0:

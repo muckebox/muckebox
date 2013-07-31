@@ -97,16 +97,8 @@ class Reader(threading.Thread):
 
         for track in file.get_tracks():
             artist = self.get_artist(track.get('artist'), session)
-
-            (album_artist, force_solo) = self.get_album_artist(track,
-                                                               artist,
-                                                               session)
-
-            (album, album_artist) = self.get_album(album_artist,
-                                                   track.get('album'),
-                                                   track.get('directory'),
-                                                   session,
-                                                   force_solo)
+            album_artist = self.get_album_artist(track, session)
+            album = self.get_album(track, album_artist, session)
 
             try:
                 dbtrack = self.get_dbtrack(track['stringid'], session)
@@ -120,6 +112,99 @@ class Reader(threading.Thread):
 
             dbtrack.from_dict(track)
 
+    def get_album_artist(self, track, session):
+        if 'albumartist' in track:
+            return self.get_artist(track.get('albumartist'), session)
+
+        artist = self.get_va_album_artist_id(track, session)
+
+        if not artist:
+            artist = self.get_artist(track.get('artist'), session)
+
+            self.update_other_album_tracks(track, artist, session)
+
+        return artist
+
+    def update_other_album_tracks(self, track, artist, session):
+        for album in session.query(Album). \
+            join(Track). \
+            join(Artist, Artist.id == Track.artist_id). \
+            filter(Album.title == track.get('album')). \
+            filter(Artist.name == track.get('artist')). \
+            filter(Album.artist_id != artist.id):
+            album.artist_id = artist.id
+
+    def get_va_album_artist_id(self, track, session):
+        directory = track.get('directory')
+        album_title = track.get('album')
+        artist_name = track.get('artist')
+
+        va_artist = False
+        found = False
+
+        for album in session.query(Album). \
+                join(Track). \
+                join(Artist, Artist.id == Track.artist_id). \
+                filter(Album.title == album_title). \
+                filter(Track.directory == directory). \
+                filter(Track.album_artist_id == None). \
+                filter(Artist.name != artist_name):
+            found = True
+
+            if not va_artist:
+                va_artist = self.get_va_artist(session)
+
+            album.artist_id = va_artist.id
+
+        if found:
+            return va_artist
+        else:
+            return False
+
+    def get_artist(self, name, session):
+        try:
+            return session.query(Artist).filter(Artist.name == name).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            ret = Artist(name = name)
+            session.add(ret)
+
+            return ret
+
+    def get_album(self, track, artist, session):
+        title= track.get('album')
+
+        try:
+            return session.query(Album). \
+                filter(Album.title == title). \
+                filter(Album.artist_id == artist.id). \
+                one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            ret = Album(title = title)
+            session.add(ret)
+            artist.albums.append(ret)
+        
+            return ret
+
+    def get_va_artist(self, session):
+        try:
+            return session.query(Artist). \
+                filter(Artist.name == Config.get_va_artist()).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            va_artist = Artist(name = Config.get_va_artist())
+            session.add(va_artist)
+
+            return va_artist
+
+    def get_dbtrack(self, stringid, session):
+        return session.query(Track).filter(Track.stringid == stringid).one()
+                
+    def handle_deletion(self, filename, session):
+        for f in session.query(File).filter(File.path.like(filename + '%')):
+            cherrypy.log("Deleting '%s'" % (f.path), self.LOG_TAG)
+            session.delete(f)
+
+        self.delete_unused()
+
     def verify_relations(self, track, album, artist, album_artist):
         if album.artist_id != album_artist.id:
             album.artist_id = album_artist.id
@@ -128,8 +213,6 @@ class Reader(threading.Thread):
             track.album_id = album.id
         if track.artist_id != artist.id:
             track.artist_id = artist.id
-        if track.album_artist_id != album_artist.id:
-            track.album_artist_id = album_artist.id
 
         self.delete_unused()
 
@@ -164,87 +247,7 @@ class Reader(threading.Thread):
             self.UPDATE_DELAY, do_delete)
         self.current_timer.start()
 
-    def get_artist(self, name, session):
-        try:
-            return session.query(Artist).filter(Artist.name == name).one()
-        except sqlalchemy.orm.exc.NoResultFound:
-            ret = Artist(name = name)
-            session.add(ret)
 
-            return ret
-
-    def get_album_artist(self, track, artist, session):
-        has_album_artist = ('albumartist' in track)
-
-        if has_album_artist:
-            album_artist = self.get_artist(track.get('albumartist'), session)
-        else:
-            album_artist = self.get_artist(track.get('artist'), session)
-        
-        return (album_artist, has_album_artist)
-
-    def get_album(self, artist, title, directory, session, force_solo = False):
-        ret = self.get_solo_album(artist, title, session)
-
-        if not ret and not force_solo:
-            ret = self.get_va_album(artist, title, directory, session)
-
-        if not ret:
-            ret = self.make_default_album(artist, title, session)
-
-        return ret
-
-    def get_solo_album(self, artist, title, session):
-        try:
-            return (session.query(Album).filter(Album.title == title).\
-                filter(Album.artist_id == artist.id).one(), artist)
-        except sqlalchemy.orm.exc.NoResultFound:
-            return False
-        except sqlalchemy.orm.exc.MultipleResultsFound:
-            cherrypy.log.error("Multiple solo albums found for '%s' (%d) - '%s'" %
-                               (artist.name, artist.id, title),
-                               self.LOG_TAG)
-            return False
-
-    def get_va_album(self, artist, title, directory, session):
-        for match in session.query(Album).join(Track). \
-                filter(Album.title == title). \
-                filter(Track.directory == directory):
-            va_artist = self.get_va_artist(session)
-            match.artist_id = va_artist.id
-
-            session.add(match)
-
-            return (match, va_artist)
-            
-        return False
-    
-    def get_va_artist(self, session):
-        try:
-            return session.query(Artist). \
-                filter(Artist.name == Config.get_va_artist()).one()
-        except sqlalchemy.orm.exc.NoResultFound:
-            va_artist = Artist(name = Config.get_va_artist())
-            session.add(va_artist)
-
-            return va_artist
-
-    def make_default_album(self, artist, title, session):
-        ret = Album(title = title)
-        session.add(ret)
-        artist.albums.append(ret)
-        
-        return (ret, artist)
-
-    def get_dbtrack(self, stringid, session):
-        return session.query(Track).filter(Track.stringid == stringid).one()
-                
-    def handle_deletion(self, filename, session):
-        for f in session.query(File).filter(File.path.like(filename + '%')):
-            cherrypy.log("Deleting '%s'" % (f.path), self.LOG_TAG)
-            session.delete(f)
-
-        self.delete_unused()
 
 
             

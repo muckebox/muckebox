@@ -17,6 +17,8 @@ from db import Db
 class TranscoderManager():
     LOG_TAG = "TRANSCODERMANAGER"
 
+    MAX_QUEUE_LENGTH = 5
+
     Request = collections.namedtuple('Request', [
             'track_id',
             'config'
@@ -61,8 +63,10 @@ class TranscoderManager():
 
                 t.flush()
 
-                cls.send_progress(t.get_stream_path(), request.config.offset,
-                                  t.get_progress(), queue)
+                if queue:
+                    cls.send_progress(t.get_stream_path(),
+                                      request.config.offset,
+                                      t.get_progress(), queue)
 
                 return t
 
@@ -161,6 +165,10 @@ class TranscoderManager():
     def enqueue_request(cls, request):
         with LockGuard(cls.lock) as l:
             cls.queue.append(request)
+
+            if len(cls.queue) > cls.MAX_QUEUE_LENGTH:
+                cls.queue.pop(0)
+
             cls.try_starting_next()
 
     @classmethod

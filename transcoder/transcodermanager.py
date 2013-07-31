@@ -31,9 +31,12 @@ class TranscoderManager():
 
     @classmethod
     def send_progress(cls, path, offset, limit, queue):
+        if limit == 0:
+            return
+        
         cherrypy.log("Sending %d bytes catchup data (%d-%d)" % \
                          (limit - offset, offset, limit), cls.LOG_TAG)
-        
+
         with open(path, 'rb') as f:
             mm = mmap.mmap(f.fileno(), limit, mmap.MAP_PRIVATE, mmap.PROT_READ)
 

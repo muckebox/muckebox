@@ -9,7 +9,7 @@ class Album(Base):
 
     id = Column(Integer, primary_key = True)
 
-    title = Column(String)
+    title = Column(String, index = True)
     artist_id = Column(Integer, ForeignKey(Artist.id))
 
     artist = relationship('Artist', backref = 'albums')

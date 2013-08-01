@@ -16,8 +16,6 @@ class Watcher(object):
         LOG_TAG = "WATCHEVENTHANDLER"
         UPDATE_DELAY = 2.0
 
-        current_timer = None
-
         def __init__(self, queue):
             pyinotify.ProcessEvent.__init__(self)
             

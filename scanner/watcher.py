@@ -23,10 +23,12 @@ class Watcher(object):
             self.queue = queue
 
         def process_default(self, event):
-            if self.is_timer_scheduled(event.pathname):
+            path = event.pathname.decode('utf-8')
+
+            if self.is_timer_scheduled(path):
                 self.current_timer.cancel()
 
-            self.post_timer(event.pathname)
+            self.post_timer(path)
 
         def post_timer(self, pathname):
             def update():

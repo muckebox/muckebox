@@ -36,7 +36,7 @@ class Reader(threading.Thread):
 
             try:
                 self.handle_file(
-                    update._replace(path = self.clean_path(update.path)),
+                    update._replace(path = os.path.abspath(update.path)),
                     session)
                 session.commit()
             except:
@@ -47,14 +47,6 @@ class Reader(threading.Thread):
     def stop(self):
         self.stop_thread = True
         self.queue.put((0, False))
-
-    def clean_path(self, path):
-        path = os.path.abspath(path)
-
-        if isinstance(path, unicode):
-            return path
-        else:
-            return unicode(path, errors = 'replace')
 
     def handle_file(self, update, session):
         if not AutoFile.is_supported(update.path):
@@ -114,7 +106,10 @@ class Reader(threading.Thread):
 
     def get_album_artist(self, track, session):
         if 'albumartist' in track:
-            return self.get_artist(track.get('albumartist'), session)
+            name = track.get('albumartist')
+
+            if len(name) > 0:
+                return self.get_artist(name, session)
 
         artist = self.get_va_album_artist_id(track, session)
 

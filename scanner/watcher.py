@@ -7,6 +7,7 @@ import cherrypy
 
 from walker import Walker
 from pathupdate import PathUpdate
+from utils import DelayedTask
 
 class Watcher(object):
     LOG_TAG = "WATCHER"
@@ -21,33 +22,18 @@ class Watcher(object):
             pyinotify.ProcessEvent.__init__(self)
             
             self.queue = queue
+            self.delayed_task = DelayedTask(self.UPDATE_DELAY)
 
         def process_default(self, event):
             path = event.pathname.decode('utf-8')
 
-            if self.is_timer_scheduled(path):
-                self.current_timer.cancel()
-
-            self.post_timer(path)
-
-        def post_timer(self, pathname):
             def update():
-                if os.path.isdir(pathname):
-                    Walker(pathname, self.queue, False, 1).start()
+                if os.path.isdir(path):
+                    Walker(path, self.queue, False, 1).start()
                 else:
-                    self.queue.put((1, PathUpdate(pathname, False)))
+                    self.queue.put((1, PathUpdate(path, False)))
 
-            self.current_timer = threading.Timer(
-                self.UPDATE_DELAY, update)
-            self.current_timer.ts = time.time()
-            self.current_timer.target = pathname
-
-            self.current_timer.start()
-
-        def is_timer_scheduled(self, pathname):
-            return self.current_timer is not None and \
-                self.current_timer.target == pathname and \
-                time.time() - self.current_timer.ts < self.UPDATE_DELAY
+            self.delayed_task.post(update, path)
 
     def __init__(self, path, queue):
         self.path = path

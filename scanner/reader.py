@@ -8,7 +8,7 @@ import cherrypy
 
 from pathupdate import PathUpdate
 
-from utils import Config
+from utils import Config, DelayedTask
 from mutabrainz.autofile import AutoFile
 from db.models import File, Track, Album, Artist
 from db import Db
@@ -21,7 +21,7 @@ class Reader(threading.Thread):
         threading.Thread.__init__(self)
         self.queue = queue
         self.stop_thread = False
-        self.current_timer = False
+        self.delayed_task = DelayedTask(self.UPDATE_DELAY)
 
         self.name = self.LOG_TAG
 
@@ -231,16 +231,8 @@ class Reader(threading.Thread):
                              self.LOG_TAG)
 
             session.commit()
-
-        if self.current_timer:
-            try:
-                self.current_timer.cancel()
-            except:
-                pass
-
-        self.current_timer = threading.Timer(
-            self.UPDATE_DELAY, do_delete)
-        self.current_timer.start()
+        
+        self.delayed_task.post(do_delete)
 
 
 

@@ -22,23 +22,11 @@ class Watcher(object):
             
             self.queue = queue
 
-        def process_IN_CLOSE_WRITE(self, event):
-            self.handle_update(event)
-                
-        def process_IN_DELETE(self, event):
-            self.handle_update(event)
+        def process_default(self, event):
+            if self.is_timer_scheduled(event.pathname):
+                self.current_timer.cancel()
 
-        def process_IN_MOVED_FROM(self, event):
-            self.handle_update(event)
-            
-        def process_IN_MOVED_TO(self, event):
-            self.handle_update(event)
-
-        def process_IN_MODIFY(self, event):
-            self.handle_update(event)
-
-        def process_IN_CREATE(self, event):
-            self.handle_update(event)
+            self.post_timer(event.pathname)
 
         def post_timer(self, pathname):
             def update():
@@ -58,12 +46,6 @@ class Watcher(object):
             return self.current_timer is not None and \
                 self.current_timer.target == pathname and \
                 time.time() - self.current_timer.ts < self.UPDATE_DELAY
-
-        def handle_update(self, event):
-            if self.is_timer_scheduled(event.pathname):
-                self.current_timer.cancel()
-
-            self.post_timer(event.pathname)
 
     def __init__(self, path, queue):
         self.path = path
@@ -85,7 +67,7 @@ class Watcher(object):
         self.notifier = pyinotify.ThreadedNotifier(wm, handler)
         self.notifier.start()
 
-        wm.add_watch(self.path, mask, rec = True)
+        wm.add_watch(self.path, mask, rec = True, auto_add = True)
 
         cherrypy.log("Watching '%s'" % (self.path), self.LOG_TAG)
 

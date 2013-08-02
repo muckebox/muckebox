@@ -45,7 +45,6 @@ class Watcher(object):
             pyinotify.IN_DELETE | \
             pyinotify.IN_MOVED_FROM | \
             pyinotify.IN_MOVED_TO | \
-            pyinotify.IN_MODIFY | \
             pyinotify.IN_CREATE
         
         handler = self.EventHandler(self.queue)

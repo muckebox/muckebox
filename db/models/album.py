@@ -14,3 +14,5 @@ class Album(Base):
 
     artist = relationship('Artist', backref = 'albums')
     tracks = relationship('Track', backref = 'album')
+
+    created = Column(Integer)

@@ -174,7 +174,7 @@ class Reader(threading.Thread):
             first()
 
         if ret is None:
-            ret = Album(title = title)
+            ret = Album(title = title, created = int(time.time()))
             artist.albums.append(ret)
             session.add(ret)
         

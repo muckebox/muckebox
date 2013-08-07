@@ -2,7 +2,6 @@
 #
 # -*- mode: python -*-
 
-import time
 import signal
 import sys
 import os
@@ -17,24 +16,19 @@ from utils.config import Config
 class Muckebox(object):
     LOG_TAG = "MUCKEBOX"
 
-    instance = False
-
-    @staticmethod
-    def handle_signal_sigint(signal, frame):
-        cherrypy.log("Caught SIGINT, trying to exit", Muckebox.LOG_TAG)
-
-        self = Muckebox.instance
-
-        if self.scanner:
-            self.scanner.stop()
-
-        if self.server:
-            self.server.stop()
-
-        sys.exit(0)
-
     def register_signal_handler(self):
-        signal.signal(signal.SIGINT, Muckebox.handle_signal_sigint)
+        def handle_signal_sigint(signal, frame):
+            cherrypy.log("Caught SIGINT, trying to exit", Muckebox.LOG_TAG)
+
+            if self.scanner:
+                self.scanner.stop()
+
+            if self.server:
+                self.server.stop()
+
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, handle_signal_sigint)
 
     def wait_for_signal(self):
         self.register_signal_handler()
@@ -75,6 +69,5 @@ class Muckebox(object):
         self.wait_for_signal()
 
 if __name__ == "__main__":
-    Muckebox.instance = Muckebox()
-    Muckebox.instance.main()
+    Muckebox().main()
 

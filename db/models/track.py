@@ -9,14 +9,14 @@ from sqlalchemy.orm import relationship
 class Track(Base):
     __tablename__ = 'tracks'
 
-    __private__ = (
+    __private__ = set([
         'stringid',
         'directory',
         'bits_per_sample',
         'sample_rate',
         'file_id',
         'album_artist_id'
-        )
+        ])
 
     id = Column(Integer, primary_key = True)
     stringid = Column(String, index = True, unique = True)

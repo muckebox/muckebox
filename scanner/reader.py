@@ -68,19 +68,18 @@ class Reader(threading.Thread):
     def handle_update(self, filename, session):
         cherrypy.log("Updating '%s'" % (filename), self.LOG_TAG)
 
-        try:
-            fh = session.query(File).filter(File.path == filename).one()
-        except sqlalchemy.orm.exc.NoResultFound:
-            fh = self.handle_new(filename, session)
-            
+        fh = self.get_file(filename, session)
         fh.mtime = os.path.getmtime(filename)
 
         self.check_tracks(fh, session)
         self.delete_unused()
         
-    def handle_new(self, filename, session):
-        fh = File(path = filename, mtime = os.path.getmtime(filename))
-        session.add(fh)
+    def get_file(self, filename, session):
+        try:
+            fh = session.query(File).filter(File.path == filename).one()
+        except sqlalchemy.orm.exc.NoResultFound:
+            fh = File(path = filename, mtime = os.path.getmtime(filename))
+            session.add(fh)
 
         return fh
 
@@ -135,7 +134,6 @@ class Reader(threading.Thread):
         artist_name = track.get('artist')
 
         va_artist = False
-        found = False
 
         for album in session.query(Album). \
                 join(Track). \
@@ -144,17 +142,12 @@ class Reader(threading.Thread):
                 filter(Track.directory == directory). \
                 filter(Track.album_artist_id == None). \
                 filter(Artist.name != artist_name):
-            found = True
-
             if not va_artist:
                 va_artist = self.get_va_artist(session)
 
             album.artist_id = va_artist.id
 
-        if found:
-            return va_artist
-        else:
-            return False
+        return va_artist
 
     def get_artist(self, name, session):
         try:

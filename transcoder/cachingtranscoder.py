@@ -1,16 +1,14 @@
 import os
 import time
 import Queue
-import hashlib
 
 import cherrypy
 
 from wrappingtranscoder import WrappingTranscoder
 from basetranscoder import BaseTranscoder
+from cachemanager import CacheManager
 
-from db import Db
 from db.models import Transcoding
-from utils import ThreadManager, Config
 
 class CachingTranscoder(WrappingTranscoder):
     LOG_TAG = "CACHINGTRANSCODER"
@@ -57,8 +55,6 @@ class CachingTranscoder(WrappingTranscoder):
         self.transcoder.join()
 
         if self.transcoder.has_completed():
-            session = Db.get_session()
-
             new_transcoding = Transcoding(
                 source_path = self.source_path,
                 format = self.get_suffix(),
@@ -69,9 +65,7 @@ class CachingTranscoder(WrappingTranscoder):
                 size = os.stat(self.output_path).st_size,
                 created = int(time.time()))
 
-            session.add(new_transcoding)
-
-            session.commit()
+            CacheManager.add_transcoding(new_transcoding)
         else:
             os.unlink(self.output_path)
 
@@ -82,40 +76,4 @@ class CachingTranscoder(WrappingTranscoder):
     def get_stream_path(self):
         return self.output_path
 
-    @classmethod
-    def get_cached_transcoding(cls, input, output):
-        session = Db.get_session()
-        query = session.query(Transcoding). \
-            filter(Transcoding.source_path == input.path). \
-            filter(Transcoding.format == output.format). \
-            filter(Transcoding.quality == output.quality). \
-            filter(Transcoding.bits_per_sample <= output.max_bits_per_sample). \
-            filter(Transcoding.sample_rate <= output.max_sample_rate)
-
-        for transcoding in query:
-            if not cls.validate_cached_path(input.path, transcoding.path):
-                session.delete(transcoding)
-                session.commit()
-            else:
-                return transcoding.path
-
-        return False
-
-    @classmethod
-    def validate_cached_path(cls, source_path, dest_path):
-        if not os.path.exists(dest_path):
-            return False
-
-        if os.path.getmtime(dest_path) < os.path.getmtime(source_path):
-            return False
-
-        return True
-
-    @classmethod
-    def get_cached_path(cls, input, output):
-        filekey = "%s:%d" % (input.id, output.quality)
-        h = hashlib.sha1(filekey.encode('utf-8')).hexdigest()
-        filename = "%s.%s" % (h, output.format)
-
-        return Config.get_cache_path() + "/" + filename
 

@@ -4,6 +4,7 @@ import cherrypy
 
 from cachingtranscoder import CachingTranscoder
 from wrappingtranscoder import WrappingTranscoder
+from cachemanager import CacheManager
 
 from oggtranscoder import OggTranscoder
 from mp3transcoder import MP3Transcoder
@@ -24,7 +25,7 @@ class AutoTranscoder(WrappingTranscoder):
         }
 
     def __init__(self, input, output):
-        cached_path = CachingTranscoder.get_cached_transcoding(input, output)
+        cached_path = CacheManager.get_cached_path(input, output)
 
         if cached_path:
             self.transcoder = NullTranscoder(
@@ -34,7 +35,7 @@ class AutoTranscoder(WrappingTranscoder):
 
             if transcoder_cls:
                 cached_output = output._replace(
-                    path = CachingTranscoder.get_cached_path(input, output))
+                    path = CacheManager.get_path_in_cache(input, output))
 
                 transcoder = transcoder_cls(input, cached_output)
                 self.transcoder = CachingTranscoder(transcoder,

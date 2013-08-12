@@ -9,7 +9,7 @@ from utils import LockGuard
 
 from basetranscoder import BaseTranscoder
 from autotranscoder import AutoTranscoder
-from cachingtranscoder import CachingTranscoder
+from cachemanager import CacheManager
 
 from db.models import Track
 from db import Db
@@ -195,8 +195,8 @@ class TranscoderManager():
             request = cls.queue.pop()
             input_config = cls.get_input_config(request)
 
-            if CachingTranscoder.get_cached_transcoding(input_config,
-                                                        request.config):
+            if CacheManager.get_cached_path(input_config,
+                                            request.config):
                 return False
 
             cls.ensure_transcoder(request)

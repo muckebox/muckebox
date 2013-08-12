@@ -1,4 +1,5 @@
 import os
+import time
 import Queue
 import hashlib
 
@@ -64,7 +65,9 @@ class CachingTranscoder(WrappingTranscoder):
                 quality = self.quality,
                 bits_per_sample = self.transcoder.get_output_bits_per_sample(),
                 sample_rate = self.transcoder.get_output_sample_rate(),
-                path = self.output_path)
+                path = self.output_path,
+                size = os.stat(self.output_path).st_size,
+                created = int(time.time()))
 
             session.add(new_transcoding)
 

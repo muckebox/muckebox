@@ -16,3 +16,6 @@ class Transcoding(Base):
     sample_rate = Column(Integer)
 
     path = Column(String)
+
+    size = Column(Integer)
+    created = Column(Integer)

@@ -33,6 +33,9 @@ class Config(object):
         parser.add_argument('-f', '--foreground', dest = 'foreground',
                             action = 'store_true', default = False,
                             help = 'Run in foreground')
+        parser.add_argument('-P', '--password', dest = 'password',
+                            default = False,
+                            help = 'HTTP password (user is always "muckebox")')
 
         cls.args = parser.parse_args()
 
@@ -103,3 +106,7 @@ class Config(object):
     @classmethod
     def is_foreground(cls):
         return cls.args.foreground
+
+    @classmethod
+    def get_password(cls):
+        return cls.args.password

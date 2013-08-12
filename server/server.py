@@ -47,11 +47,24 @@ class Server(threading.Thread):
 
             cherrypy.log("SSL disabled", self.LOG_TAG, logging.WARNING)
 
+    def configure_authentication(self, config):
+        password = Config.get_password()
+
+        if password:
+            passdict = { 'muckebox' : password }
+            checkpassword = cherrypy.lib.auth_basic.checkpassword_dict(passdict)
+            config.update({
+                    'tools.auth_basic.on': True,
+                    'tools.auth_basic.realm': 'muckebox',
+                    'tools.auth_basic.checkpassword': checkpassword
+                    })
+
     def configure(self):
         config = { }
 
         self.configure_server(config)
         self.configure_ssl(config)
+        self.configure_authentication(config)
 
         cherrypy.config.update(config)
 

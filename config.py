@@ -30,9 +30,6 @@ config = {
     # Where to store our log files
     'log_path' :                data_path + '/log',
 
-    # TCP port to listen on
-    'port' :                    2342,
-
     # Filenames for SSL, SSL will be disabled if those cannot be found
     #
     # Those pathes can be relative to the directory containing the
@@ -43,7 +40,17 @@ config = {
     # HTTP authentification password the clients must use
     'password' :                '',
 
+    ### The following settings are optional and can be omitted in your
+    ### config file
+
+    # TCP port to listen on
+    'port' :                    2342,
+
     # Name of the album artist for various artists albums (i.e. albums with
     # different artist tags
-    'va_artist' :               'VA'
+    'va_artist' :               'VA',
+
+    # Unless this is set to True, the server will not start without
+    # SSL keys and a password
+    'allow_insecure':           False
 }

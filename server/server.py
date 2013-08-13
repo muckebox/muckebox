@@ -28,6 +28,8 @@ class Server(threading.Thread):
                     'server.ssl_certificate': crtfile,
                     'server.ssl_private_key': keyfile
                     })
+
+            return True
         else:
             if not os.path.exists(keyfile):
                 cherrypy.log("Key file %s missing" % (keyfile), \
@@ -38,6 +40,8 @@ class Server(threading.Thread):
                                  self.LOG_TAG, logging.WARNING)
 
             cherrypy.log("SSL disabled", self.LOG_TAG, logging.WARNING)
+
+            return False
 
     def configure_authentication(self, config):
         password = Settings.get_password()
@@ -50,6 +54,12 @@ class Server(threading.Thread):
                     'tools.auth_basic.realm': 'muckebox',
                     'tools.auth_basic.checkpassword': checkpassword
                     })
+
+            return True
+        else:
+            cherrypy.log("Password is not set", self.LOG_TAG,
+                         logging.WARNING)
+            return False
 
     def configure_logs(self, config):
         if not Settings.is_foreground():
@@ -64,10 +74,18 @@ class Server(threading.Thread):
 
         self.configure_logs(config)
         self.configure_server(config)
-        self.configure_ssl(config)
-        self.configure_authentication(config)
+
+        ssl_enabled = self.configure_ssl(config)
+        password_enabled = self.configure_authentication(config)
+
+        if not ((ssl_enabled and password_enabled) or
+                Settings.allow_insecure()):
+            cherrypy.log("Insecure operation disabled, stopping", self.LOG_TAG)
+            return False
 
         cherrypy.config.update(config)
+
+        return True
 
     def run(self):
         self.mount_api()

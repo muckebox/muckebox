@@ -82,11 +82,13 @@ class Settings(object):
 
     @classmethod
     def get_ssl_key_path(cls):
-        return cls.get_config_path(cls.config['ssl_key_path'])
+        return cls.get_config_path(cls.config.get('ssl_key_path',
+                                                  'ssl/server.key'))
 
     @classmethod
     def get_ssl_cert_path(cls):
-        return cls.get_config_path(cls.config['ssl_certificate_path'])
+        return cls.get_config_path(cls.config.get('ssl_certificate_path',
+                                                  'ssl/server.crt'))
 
     @classmethod
     def get_library_path(cls):
@@ -98,15 +100,19 @@ class Settings(object):
 
     @classmethod
     def get_password(cls):
-        return cls.config['password']
+        return cls.config.get('password', '')
 
     @classmethod
     def get_port(cls):
-        return cls.config['port']
+        return cls.config.get('port', 2342)
 
     @classmethod
     def get_va_artist(cls):
-        return cls.config['va_artist']
+        return cls.config.get('va_artist', 'VA')
+
+    @classmethod
+    def allow_insecure(cls):
+        return cls.config.get('allow_insecure', False)
 
     @classmethod
     def is_verbose(cls):

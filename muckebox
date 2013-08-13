@@ -51,7 +51,9 @@ class Muckebox(object):
         self.create_paths()
 
         self.server = Server()
-        self.server.configure()
+
+        if not self.server.configure():
+            return
 
         Db.open(Settings.get_db_path(), Settings.is_verbose())
 

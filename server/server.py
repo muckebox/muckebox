@@ -5,6 +5,7 @@ import os.path
 
 from api import API
 from utils import Settings
+from error import handle_error
 
 class Server(threading.Thread):
     LOG_TAG = "SERVER"
@@ -15,7 +16,9 @@ class Server(threading.Thread):
     def configure_server(self, config):
         config.update({
                 'server.socket_host': '0.0.0.0',
-                'server.socket_port': Settings.get_port()
+                'server.socket_port': Settings.get_port(),
+                'error_page.404': handle_error,
+                'error_page.401': handle_error
             })
 
     def configure_ssl(self, config):

@@ -1,8 +1,11 @@
 import argparse
 import imp
 import os
+import cherrypy
 
 class Settings(object):
+    LOG_TAG = "SETTINGS"
+
     args = { }
     config = False
     config_path = False
@@ -49,12 +52,12 @@ class Settings(object):
             except:
                 pass
 
-        print "WARNING: could not load config file, using built-in defaults"
+        cherrypy.log("Could not load config file, using built-in defaults",
+                     self.LOG_TAG)
 
-        (fn, path, descr) = imp.find_module('default_configuration')
+        (fn, path, descr) = imp.find_module('config')
 
-        cls.config = imp.load_module('default_configuration',
-                                     fn, path, descr).config
+        cls.config = imp.load_module('config', fn, path, descr).config
         cls.config_path = path
 
     @classmethod

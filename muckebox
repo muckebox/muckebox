@@ -10,8 +10,8 @@ import cherrypy
 
 from scanner.scanner import Scanner
 from server.server import Server
-from db.db import Db
-from utils.config import Config
+from db import Db
+from utils import Settings
 
 class Muckebox(object):
     LOG_TAG = "MUCKEBOX"
@@ -36,8 +36,8 @@ class Muckebox(object):
         signal.pause()
 
     def create_paths(self):
-        cache_path = Config.get_cache_path()
-        log_path = Config.get_log_path()
+        cache_path = Settings.get_cache_path()
+        log_path = Settings.get_log_path()
         
         if not os.path.exists(cache_path):
             os.makedirs(cache_path)
@@ -46,22 +46,22 @@ class Muckebox(object):
             os.makedirs(log_path)
 
     def main(self):
-        Config.parse_args()
+        Settings.parse_args()
         
         self.create_paths()
 
         self.server = Server()
         self.server.configure()
 
-        Db.open(Config.get_db_path(), Config.is_verbose())
+        Db.open(Settings.get_db_path(), Settings.is_verbose())
 
-        if Config.is_scanner_enabled():
-            self.scanner = Scanner(Config.get_library_path())
+        if Settings.is_scanner_enabled():
+            self.scanner = Scanner(Settings.get_library_path())
             self.scanner.start()
         else:
             self.scanner = False
 
-        if Config.is_api_enabled():
+        if Settings.is_api_enabled():
             self.server.start()
         else:
             self.server = False

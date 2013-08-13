@@ -3,8 +3,8 @@ import logging
 import cherrypy
 import os.path
 
-from api.api import API
-from utils.config import Config
+from api import API
+from utils import Settings
 
 class Server(threading.Thread):
     LOG_TAG = "SERVER"
@@ -15,12 +15,12 @@ class Server(threading.Thread):
     def configure_server(self, config):
         config.update({
                 'server.socket_host': '0.0.0.0',
-                'server.socket_port': Config.get_port()
+                'server.socket_port': Settings.get_port()
             })
 
     def configure_ssl(self, config):
-        keyfile = Config.get_ssl_path("server.key")
-        crtfile = Config.get_ssl_path("server.crt")
+        keyfile = Settings.get_ssl_key_path()
+        crtfile = Settings.get_ssl_cert_path()
 
         if os.path.exists(keyfile) and os.path.exists(crtfile):
             config.update({
@@ -28,14 +28,6 @@ class Server(threading.Thread):
                     'server.ssl_certificate': crtfile,
                     'server.ssl_private_key': keyfile
                     })
-
-        if not Config.is_foreground():
-            config.update({
-                    'log.screen': False,
-                    'log.access_file': Config.get_access_log_path(),
-                    'log.error_file': Config.get_error_log_path()
-                    })
-
         else:
             if not os.path.exists(keyfile):
                 cherrypy.log("Key file %s missing" % (keyfile), \
@@ -48,7 +40,7 @@ class Server(threading.Thread):
             cherrypy.log("SSL disabled", self.LOG_TAG, logging.WARNING)
 
     def configure_authentication(self, config):
-        password = Config.get_password()
+        password = Settings.get_password()
 
         if password:
             passdict = { 'muckebox' : password }
@@ -59,9 +51,18 @@ class Server(threading.Thread):
                     'tools.auth_basic.checkpassword': checkpassword
                     })
 
+    def configure_logs(self, config):
+        if not Settings.is_foreground():
+            config.update({
+                    'log.screen': False,
+                    'log.access_file': Settings.get_access_log_path(),
+                    'log.error_file': Settings.get_error_log_path()
+                    })
+
     def configure(self):
         config = { }
 
+        self.configure_logs(config)
         self.configure_server(config)
         self.configure_ssl(config)
         self.configure_authentication(config)

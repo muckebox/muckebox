@@ -13,7 +13,6 @@ from nulltranscoder import NullTranscoder
 
 from db.models import Transcoding
 from db import Db
-from utils import Config
 
 class AutoTranscoder(WrappingTranscoder):
     LOG_TAG = "AUTOTRANSCODER"

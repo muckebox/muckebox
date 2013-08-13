@@ -8,7 +8,7 @@ import cherrypy
 
 from pathupdate import PathUpdate
 
-from utils import Config, DelayedTask
+from utils import Settings, DelayedTask
 from mutabrainz.autofile import AutoFile
 from db.models import File, Track, Album, Artist
 from db import Db
@@ -176,9 +176,9 @@ class Reader(threading.Thread):
     def get_va_artist(self, session):
         try:
             return session.query(Artist). \
-                filter(Artist.name == Config.get_va_artist()).one()
+                filter(Artist.name == Settings.get_va_artist()).one()
         except sqlalchemy.orm.exc.NoResultFound:
-            va_artist = Artist(name = Config.get_va_artist())
+            va_artist = Artist(name = Settings.get_va_artist())
             session.add(va_artist)
 
             return va_artist

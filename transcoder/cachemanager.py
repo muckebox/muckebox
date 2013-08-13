@@ -4,7 +4,7 @@ import hashlib
 from db import Db
 from db.models import Transcoding
 
-from utils import Config
+from utils import Settings
 
 class CacheManager():
     @classmethod
@@ -48,4 +48,4 @@ class CacheManager():
         h = hashlib.sha1(filekey.encode('utf-8')).hexdigest()
         filename = "%s.%s" % (h, output.format)
 
-        return Config.get_cache_path() + "/" + filename
+        return Settings.get_cache_path() + "/" + filename

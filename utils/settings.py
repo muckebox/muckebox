@@ -3,6 +3,8 @@ import imp
 import os
 import cherrypy
 
+from unitconverter import UnitConverter
+
 class Settings(object):
     LOG_TAG = "SETTINGS"
 
@@ -102,6 +104,11 @@ class Settings(object):
         return cls.config['cache_path']
 
     @classmethod
+    def get_maximum_cache_size(cls):
+        return UnitConverter.string_to_bytes(
+            cls.config.get('maximum_cache_size', '10G'))
+
+    @classmethod
     def get_password(cls):
         return cls.config.get('password', '')
 
@@ -136,3 +143,5 @@ class Settings(object):
     @classmethod
     def is_foreground(cls):
         return cls.args.foreground
+
+        

@@ -52,5 +52,9 @@ config = {
 
     # Unless this is set to True, the server will not start without
     # SSL keys and a password
-    'allow_insecure':           False
+    'allow_insecure':           False,
+
+    # Maximum size of the cache in bytes (you can use a suffix like 'M',
+    # 'G' etc. to abbreviate)
+    'maximum_cache_size' :      '10G'
 }

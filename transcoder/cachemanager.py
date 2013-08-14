@@ -9,20 +9,20 @@ from sqlalchemy.sql.expression import asc
 from db import Db
 from db.models import Transcoding
 
-from utils import Settings, FileLockGuard
+from utils import Settings, FileLockGuard, DbWriteGuard
 
 class CacheManager():
     LOG_TAG = "CACHEMANAGER"
 
     @classmethod
     def add_transcoding(cls, transcoding):
-        session = Db.get_session()
-        session.add(transcoding)
-        session.commit()
+        with DbWriteGuard():
+            session = Db.get_session()
+            session.add(transcoding)
+            session.commit()
 
-        cls.vacuum(session)
-        session.commit()
-
+            cls.vacuum(session)
+            session.commit()
 
     @classmethod
     def get_cached_path(cls, input, output):

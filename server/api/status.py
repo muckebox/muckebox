@@ -12,7 +12,7 @@ class StatusAPI(object):
     @cherrypy.expose
     @cherrypy.tools.json_out()
     def default(self):
-        session = Db().get_session()
+        session = Db.get_session()
 
         artist_count = session.query(func.count(Artist.id)).one()[0]
         track_count = session.query(func.count(Track.id)).one()[0]

@@ -8,7 +8,7 @@ import cherrypy
 
 from pathupdate import PathUpdate
 
-from utils import Settings, DelayedTask
+from utils import Settings, DelayedTask, DbWriteGuard
 from mutabrainz.autofile import AutoFile
 from db.models import File, Track, Album, Artist
 from db import Db
@@ -26,7 +26,7 @@ class Reader(threading.Thread):
         self.name = self.LOG_TAG
 
     def run(self):
-        session = Db().get_session()
+        session = Db.get_session()
 
         while True:
             (priority, update) = self.queue.get()
@@ -34,15 +34,16 @@ class Reader(threading.Thread):
             if self.stop_thread:
                 break
 
-            try:
-                self.handle_file(
-                    update._replace(path = os.path.abspath(update.path)),
-                    session)
-                session.commit()
-            except:
-                cherrypy.log.error("Cannot read '%s', skipping" % (update.path),
-                                   self.LOG_TAG)
-                session.rollback()
+            with DbWriteGuard():
+                try:
+                    self.handle_file(
+                        update._replace(path = os.path.abspath(update.path)),
+                        session)
+                    session.commit()
+                except:
+                    cherrypy.log.error("Cannot read '%s', skipping" %
+                                       (update.path), self.LOG_TAG)
+                    session.rollback()
 
     def stop(self):
         self.stop_thread = True
@@ -206,24 +207,26 @@ class Reader(threading.Thread):
 
     def delete_unused(self):
         def do_delete():
-            session = Db().get_session()
+            session = Db.get_session()
 
-            count = session.query(Album).filter(Album.tracks == None). \
-                delete(synchronize_session = False)
+            with DbWriteGuard():
+                count = session.query(Album).filter(Album.tracks == None). \
+                    delete(synchronize_session = False)
 
-            if count > 0:
-                cherrypy.log("Deleted %d orphaned album(s)" % (count),
-                             self.LOG_TAG)
+                if count > 0:
+                    cherrypy.log("Deleted %d orphaned album(s)" % (count),
+                                 self.LOG_TAG)
 
-            count = session.query(Artist).filter(Artist.albums == None). \
-                filter(Artist.tracks == None). \
-                delete(synchronize_session = False)
+                count = session.query(Artist). \
+                    filter(Artist.albums == None). \
+                    filter(Artist.tracks == None). \
+                    delete(synchronize_session = False)
 
-            if count > 0:
-                cherrypy.log("Deleted %d orphaned artist(s)" % (count),
-                             self.LOG_TAG)
+                if count > 0:
+                    cherrypy.log("Deleted %d orphaned artist(s)" % (count),
+                                 self.LOG_TAG)
 
-            session.commit()
+                session.commit()
         
         self.delayed_task.post(do_delete)
 

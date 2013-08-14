@@ -104,9 +104,9 @@ class Settings(object):
         return cls.config['cache_path']
 
     @classmethod
-    def get_maximum_cache_size(cls):
+    def get_max_cache_size(cls):
         return UnitConverter.string_to_bytes(
-            cls.config.get('maximum_cache_size', '10G'))
+            cls.config.get('max_cache_size', '10G'))
 
     @classmethod
     def get_password(cls):

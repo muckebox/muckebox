@@ -26,5 +26,5 @@ class FileLockGuard(object):
 
     @classmethod
     def is_opened(cls, filename):
-        with LockGuard(self.lock):
-            return filename in self.open_files
+        with LockGuard(cls.lock):
+            return filename in cls.open_files

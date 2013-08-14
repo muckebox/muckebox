@@ -56,5 +56,5 @@ config = {
 
     # Maximum size of the cache in bytes (you can use a suffix like 'M',
     # 'G' etc. to abbreviate)
-    'maximum_cache_size' :      '10G'
+    'max_cache_size' :      '10G'
 }

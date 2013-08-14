@@ -2,7 +2,7 @@ import mimetypes
 import threading
 
 from basetranscoder import BaseTranscoder
-from utils import LockGuard
+from utils import LockGuard, FileLockGuard
 
 class NullTranscoder(BaseTranscoder):
     pause_lock = threading.Lock()
@@ -31,7 +31,7 @@ class NullTranscoder(BaseTranscoder):
 
     def run(self):
         try:
-            with open(self.path, 'rb') as self.file_handle:
+            with FileLockGuard(self.path, 'rb') as self.file_handle:
                 self.file_handle.seek(self.offset)
 
                 while not self.stop:

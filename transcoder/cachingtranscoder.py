@@ -10,6 +10,8 @@ from cachemanager import CacheManager
 
 from db.models import Transcoding
 
+from utils import FileLockGuard
+
 class CachingTranscoder(WrappingTranscoder):
     LOG_TAG = "CACHINGTRANSCODER"
 
@@ -40,7 +42,7 @@ class CachingTranscoder(WrappingTranscoder):
     def run(self):
         self.transcoder.start()
 
-        with open(self.output_path, 'wb') as self.file_handle:
+        with FileLockGuard(self.output_path, 'wb') as self.file_handle:
             while True:
                 block = self.slave_queue.get()
 

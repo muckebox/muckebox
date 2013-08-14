@@ -1,8 +1,8 @@
 from cherrypy import expose, tools
 
 from sqlalchemy.sql.expression import func
-from db.models.track import Track
-from db.db import Db
+from db.models import Track
+from db import Db
 
 class TracksAPI(object):
     @expose

@@ -1,8 +1,8 @@
 import cherrypy
 
-from mutabrainz.autofile import AutoFile
-from db.models.album import Album
-from db.db import Db
+from mutabrainz import AutoFile
+from db.models import Album
+from db import Db
 
 class ArtworkAPI(object):
     @cherrypy.expose

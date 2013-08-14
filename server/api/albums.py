@@ -1,7 +1,7 @@
 from cherrypy import expose, tools
 
-from db.models.album import Album
-from db.db import Db
+from db.models import Album
+from db import Db
 
 class AlbumsAPI(object):
     @expose

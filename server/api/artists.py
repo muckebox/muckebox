@@ -1,7 +1,7 @@
 from cherrypy import expose, tools
 
-from db.models.artist import Artist
-from db.db import Db
+from db.models import Artist
+from db import Db
 
 class ArtistsAPI(object):
     @expose
